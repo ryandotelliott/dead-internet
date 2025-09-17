@@ -1,10 +1,10 @@
 import { Doc } from "@/convex/_generated/dataModel";
 
-type User = Doc<"user">;
-type EmailMessage = Doc<"emailMessage">;
+type User = Doc<"users">;
+type EmailMessage = Doc<"emailMessages">;
 type ListingItem = Pick<
   EmailMessage,
-  "_id" | "from" | "subject" | "_creationTime"
+  "_id" | "from" | "subject" | "_creationTime" | "to"
 >;
 
 export type { User, EmailMessage, ListingItem };

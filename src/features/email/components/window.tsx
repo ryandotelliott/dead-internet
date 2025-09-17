@@ -1,9 +1,7 @@
-"use client";
-
 import React from "react";
 import Viewer from "./viewer";
 import Composer from "./composer";
-import Listing from "./listing";
+import Listing from "./listing/listing";
 
 type Props = {};
 

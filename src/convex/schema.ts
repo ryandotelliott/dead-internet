@@ -2,13 +2,13 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
-  user: defineTable({
+  users: defineTable({
     name: v.string(),
     email: v.string(),
   }),
-  emailMessage: defineTable({
-    from: v.id("user"),
-    to: v.array(v.id("user")),
+  emailMessages: defineTable({
+    from: v.id("users"),
+    to: v.array(v.id("users")),
     subject: v.string(),
     body: v.string(),
   }),
