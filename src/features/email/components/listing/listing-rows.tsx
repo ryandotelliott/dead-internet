@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect } from "react";
-import ListingRow from "./listing-row";
+import ListingRow from "@/features/email/components/listing/listing-row";
 import { Preloaded, usePreloadedQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useEmailStore } from "../../state/store";
+import { useEmailStore } from "@/features/email/state/store";
 
 type Props = {
   preloadedMessages: Preloaded<typeof api.email.messages.listInbox>;

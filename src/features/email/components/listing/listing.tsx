@@ -1,6 +1,6 @@
 import React from "react";
-import ListingHeader from "./listing-header";
-import ListingRows from "./listing-rows";
+import ListingHeader from "@/features/email/components/listing/listing-header";
+import ListingRows from "@/features/email/components/listing/listing-rows";
 import { preloadQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
 

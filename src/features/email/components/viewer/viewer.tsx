@@ -2,6 +2,8 @@
 
 import React from "react";
 import { useEmailStore } from "@/features/email/state/store";
+import ViewerHeader from "@/features/email/components/viewer/viewer-header";
+import ShadowDom from "@/features/email/components/viewer/shadow-dom";
 
 function EmptyViewer() {
   return (
@@ -20,9 +22,12 @@ export default function Viewer() {
   if (!selectedMessage) return <EmptyViewer />;
 
   return (
-    <div className="flex flex-col h-full w-full p-4">
-      <p className="text-sm text-muted-foreground">{selectedMessage.subject}</p>
-      <p className="text-sm text-muted-foreground">{selectedMessage.body}</p>
+    <div className="flex flex-col h-full w-full">
+      <ViewerHeader subject={selectedMessage.subject} />
+
+      <div className="flex flex-col h-full w-full p-2">
+        <ShadowDom html={selectedMessage.body} />
+      </div>
     </div>
   );
 }

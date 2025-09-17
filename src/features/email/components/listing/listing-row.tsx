@@ -2,7 +2,7 @@
 
 import { Id } from "@/convex/_generated/dataModel";
 import React, { useMemo } from "react";
-import { useEmailStore } from "../../state/store";
+import { useEmailStore } from "@/features/email/state/store";
 
 type Props = {
   id: Id<"emailMessages">;
