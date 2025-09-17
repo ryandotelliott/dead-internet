@@ -1,10 +1,14 @@
 import { create, StateCreator } from "zustand";
-import { EmailMessage, ListingItem } from "@/features/email/types";
+import type {
+  EmailMessage as EmailMessage,
+  InboxItem as ListingItem,
+} from "@/convex/email/messages";
 import { ComposerSlice, createComposerSlice } from "./composer-slice";
+import { Id } from "@/convex/_generated/dataModel";
 
 interface EmailViewerSlice {
-  selectedMessage: EmailMessage | null;
-  setSelectedMessage: (message: EmailMessage | null) => void;
+  selectedMessageId: Id<"emailMessages"> | null;
+  setSelectedMessageId: (messageId: Id<"emailMessages"> | null) => void;
   inboxItems: ListingItem[];
   setInboxItems: (items: ListingItem[]) => void;
 }
@@ -15,9 +19,9 @@ const createEmailViewerSlice: StateCreator<
   [],
   EmailViewerSlice
 > = (set) => ({
-  selectedMessage: null,
-  setSelectedMessage: (message: EmailMessage | null) => {
-    set({ selectedMessage: message });
+  selectedMessageId: null,
+  setSelectedMessageId: (messageId: Id<"emailMessages"> | null) => {
+    set({ selectedMessageId: messageId });
   },
   inboxItems: [],
   setInboxItems: (items: ListingItem[]) => {

@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { useEmailStore } from "@/features/email/state/store";
 
@@ -10,7 +12,10 @@ function EmptyViewer() {
 }
 
 export default function Viewer() {
-  const { selectedMessage } = useEmailStore();
+  const selectedMessageId = useEmailStore((state) => state.selectedMessageId);
+  const selectedMessage = useEmailStore((state) =>
+    state.inboxItems.find((item) => item._id === selectedMessageId),
+  );
 
   if (!selectedMessage) return <EmptyViewer />;
 

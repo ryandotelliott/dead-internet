@@ -1,5 +1,3 @@
-"use client";
-
 import EmailWindow from "@/features/email/components/window";
 
 export default function Home() {

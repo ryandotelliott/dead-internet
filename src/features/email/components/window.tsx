@@ -3,9 +3,7 @@ import Viewer from "./viewer";
 import Composer from "./composer";
 import Listing from "./listing/listing";
 
-type Props = {};
-
-export default function EmailWindow({}: Props) {
+export default function EmailWindow() {
   return (
     <div className="flex w-full h-full border-1 relative">
       <Listing />

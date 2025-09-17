@@ -13,6 +13,7 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
+import type * as email_messages from "../email/messages.js";
 import type * as email_seed from "../email/seed.js";
 
 /**
@@ -24,6 +25,7 @@ import type * as email_seed from "../email/seed.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  "email/messages": typeof email_messages;
   "email/seed": typeof email_seed;
 }>;
 export declare const api: FilterApi<
