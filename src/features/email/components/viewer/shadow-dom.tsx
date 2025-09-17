@@ -24,13 +24,12 @@ export default function ShadowDom({ html }: { html: string }) {
       all: initial; /* isolate from outside CSS */
     }
     div[role="document"] {
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 14px;
-      line-height: 1.4;
+      font-family: var(--font-geist-sans);
+      font-size: 15px;
+      line-height: 1.8;
       color: var(--foreground);
       background: var(--background);
       margin: 0;
-      padding: 1rem;
     }
     div[role="document"] table {
       border-collapse: collapse;
