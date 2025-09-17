@@ -5,18 +5,15 @@ import { Button } from "@/shared/components/ui/button";
 import { X } from "lucide-react";
 import { Label } from "@/shared/components/ui/label";
 import { PillInput } from "@/shared/components/ui/pill-input";
+import { useEmailStore } from "@/features/email/state/store";
 
 type Props = {
   initialRecipients: string[];
-  isOpen: boolean;
-  onClose: () => void;
 };
 
-export default function Composer({
-  initialRecipients,
-  isOpen,
-  onClose,
-}: Props) {
+export default function Composer({ initialRecipients }: Props) {
+  const { isComposerOpen, setIsComposerOpen } = useEmailStore();
+
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [recipientEmails, setRecipientEmails] = useState<string[]>(
@@ -28,7 +25,7 @@ export default function Composer({
     return (value: string) => re.test(value);
   }, []);
 
-  if (!isOpen) return null;
+  if (!isComposerOpen) return null;
 
   return (
     <div className="absolute bottom-4 right-4 z-50 w-[520px] max-w-[92vw] rounded-md border-1 bg-background shadow-xl flex flex-col overflow-hidden">
@@ -37,7 +34,7 @@ export default function Composer({
         <Button
           size="icon"
           variant="ghost"
-          onClick={onClose}
+          onClick={() => setIsComposerOpen(false)}
           aria-label="Close composer"
         >
           <X className="size-4" />
@@ -86,7 +83,7 @@ export default function Composer({
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="Write your message..."
-            className="min-h-52 resize-none"
+            className="min-h-60 resize-none"
           />
         </div>
       </div>

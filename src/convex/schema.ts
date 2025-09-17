@@ -11,6 +11,5 @@ export default defineSchema({
     to: v.array(v.id("user")),
     subject: v.string(),
     body: v.string(),
-    createdAt: v.number(),
   }),
 });
