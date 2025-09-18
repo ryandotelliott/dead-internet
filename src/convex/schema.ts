@@ -11,19 +11,18 @@ export default defineSchema({
     .index("byEmail", ["email"]),
 
   emails: defineTable({
-    fromProfileId: v.id("profiles"),
+    senderProfileId: v.id("profiles"),
     subject: v.string(),
     body: v.string(),
-    threadId: v.optional(v.id("emailThreads")),
-  }).index("byFrom", ["fromProfileId"]),
+  }).index("bySender", ["senderProfileId"]),
 
   /*
    * This is a fan-out table, so we can query all emails for a profile quickly
    */
   mailboxEntries: defineTable({
-    fromProfileId: v.id("profiles"),
+    senderProfileId: v.id("profiles"),
     ownerProfileId: v.id("profiles"), // whose mailbox this appears in
-    messageId: v.id("emailMessages"),
+    messageId: v.id("emails"),
     role: v.union(v.literal("to"), v.literal("cc")),
     folder: v.union(v.literal("inbox"), v.literal("sent"), v.literal("trash")),
     read: v.boolean(),
