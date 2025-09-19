@@ -13,9 +13,13 @@ export default async function Listing() {
     return null;
   }
 
-  const messages = await preloadQuery(api.email.emails.listMailboxEntries, {
-    folder: "inbox",
-  });
+  const messages = await preloadQuery(
+    api.email.emails.listMailboxEntries,
+    {
+      folder: "inbox",
+    },
+    { token },
+  );
 
   return (
     <div className="flex flex-col h-full border-r-1 min-w-80 overflow-y-auto">
