@@ -1,18 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useConvexAuth } from "convex/react";
 import { authClient } from "@/features/auth/lib/auth-client";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
+import { useRouter } from "next/navigation";
 
-type Props = {
-  children: React.ReactNode;
-};
-
-export default function AuthGate({ children }: Props) {
-  const { isLoading, isAuthenticated } = useConvexAuth();
+export default function SignInPage() {
+  const router = useRouter();
   const [mode, setMode] = useState<"signIn" | "signUp">("signIn");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,11 +20,8 @@ export default function AuthGate({ children }: Props) {
     [mode],
   );
 
-  if (isLoading) return null;
-  if (isAuthenticated) return children;
-
   return (
-    <div className="w-full h-full flex items-center justify-center p-6">
+    <div className="w-full h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-sm border rounded-lg p-6 space-y-4">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold">{buttonText} to continue</h1>
@@ -48,6 +41,7 @@ export default function AuthGate({ children }: Props) {
               } else {
                 await authClient.signIn.email({ email, password });
               }
+              router.push("/");
             } catch (err: unknown) {
               setError(
                 err instanceof Error ? err.message : "Authentication failed",

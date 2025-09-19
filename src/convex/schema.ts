@@ -22,7 +22,7 @@ export default defineSchema({
   mailboxEntries: defineTable({
     senderProfileId: v.id("profiles"),
     ownerProfileId: v.id("profiles"), // whose mailbox this appears in
-    messageId: v.id("emails"),
+    emailId: v.id("emails"),
     role: v.union(v.literal("to"), v.literal("cc")),
     folder: v.union(v.literal("inbox"), v.literal("sent"), v.literal("trash")),
     read: v.boolean(),
@@ -30,5 +30,5 @@ export default defineSchema({
   })
     .index("byOwner", ["ownerProfileId"])
     .index("byOwnerFolder", ["ownerProfileId", "folder"])
-    .index("byMessage", ["messageId"]),
+    .index("byEmail", ["emailId"]),
 });

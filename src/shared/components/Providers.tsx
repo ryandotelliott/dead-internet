@@ -3,7 +3,6 @@
 import React from "react";
 import ConvexClientProvider from "./ConvexClientProvider";
 import { ThemeProvider } from "./ThemeProvider";
-import AuthGate from "@/features/auth/components/auth-gate";
 
 type Props = {
   children: React.ReactNode;
@@ -18,7 +17,7 @@ export default function Providers({ children }: Props) {
         enableSystem
         disableTransitionOnChange
       >
-        <AuthGate>{children}</AuthGate>
+        {children}
       </ThemeProvider>
     </ConvexClientProvider>
   );

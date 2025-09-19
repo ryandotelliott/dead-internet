@@ -1,8 +1,7 @@
 import { createClient, type GenericCtx } from "@convex-dev/better-auth";
 import { convex } from "@convex-dev/better-auth/plugins";
-import { components, internal } from "./_generated/api";
+import { components } from "./_generated/api";
 import { DataModel } from "./_generated/dataModel";
-import { query } from "./_generated/server";
 import { betterAuth } from "better-auth";
 
 const siteUrl = process.env.SITE_URL;
@@ -11,6 +10,20 @@ export const authComponent = createClient<DataModel>(components.betterAuth, {
   triggers: {
     user: {
       onCreate: async (ctx, user) => {
+        const existingProfile = await ctx.db
+          .query("profiles")
+          .withIndex("byEmail", (q) => q.eq("email", user.email))
+          .unique();
+
+        if (existingProfile) {
+          await ctx.db.patch(existingProfile._id, {
+            userId: user._id,
+            name: user.name,
+            email: user.email,
+          });
+          return;
+        }
+
         await ctx.db.insert("profiles", {
           userId: user._id,
           name: user.name,
@@ -38,10 +51,3 @@ export const createAuth = (
     plugins: [convex()],
   });
 };
-
-export const getCurrentUser = query({
-  args: {},
-  handler: async (ctx) => {
-    return authComponent.getAuthUser(ctx);
-  },
-});

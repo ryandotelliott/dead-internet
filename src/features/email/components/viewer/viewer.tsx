@@ -16,7 +16,7 @@ function EmptyViewer() {
 export default function Viewer() {
   const selectedMessageId = useEmailStore((state) => state.selectedMessageId);
   const selectedMessage = useEmailStore((state) =>
-    state.inboxItems.find((item) => item._id === selectedMessageId),
+    state.mailboxEntries.find((item) => item._id === selectedMessageId),
   );
 
   if (!selectedMessage) return <EmptyViewer />;

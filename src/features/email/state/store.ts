@@ -1,16 +1,17 @@
 import { create, StateCreator } from "zustand";
-import type {
-  EmailMessage as EmailMessage,
-  InboxItem as ListingItem,
-} from "@/convex/email/messages";
+import type { MailboxEntry } from "@/convex/email/emails";
 import { ComposerSlice, createComposerSlice } from "./composer-slice";
 import { Id } from "@/convex/_generated/dataModel";
 
 interface EmailViewerSlice {
-  selectedMessageId: Id<"emailMessages"> | null;
-  setSelectedMessageId: (messageId: Id<"emailMessages"> | null) => void;
-  inboxItems: ListingItem[];
-  setInboxItems: (items: ListingItem[]) => void;
+  selectedMessageId: Id<"mailboxEntries"> | null;
+  setSelectedMessageId: (messageId: Id<"mailboxEntries"> | null) => void;
+  mailboxEntries: MailboxEntry[];
+  setMailboxEntries: (items: MailboxEntry[]) => void;
+  updateMailboxEntry: (
+    id: Id<"mailboxEntries">,
+    patch: Partial<MailboxEntry>,
+  ) => void;
 }
 
 const createEmailViewerSlice: StateCreator<
@@ -20,12 +21,19 @@ const createEmailViewerSlice: StateCreator<
   EmailViewerSlice
 > = (set) => ({
   selectedMessageId: null,
-  setSelectedMessageId: (messageId: Id<"emailMessages"> | null) => {
+  setSelectedMessageId: (messageId: Id<"mailboxEntries"> | null) => {
     set({ selectedMessageId: messageId });
   },
-  inboxItems: [],
-  setInboxItems: (items: ListingItem[]) => {
-    set({ inboxItems: items });
+  mailboxEntries: [],
+  setMailboxEntries: (items: MailboxEntry[]) => {
+    set({ mailboxEntries: items });
+  },
+  updateMailboxEntry: (id, patch) => {
+    set((state) => ({
+      mailboxEntries: state.mailboxEntries.map((m) =>
+        m._id === id ? { ...m, ...patch } : m,
+      ),
+    }));
   },
 });
 

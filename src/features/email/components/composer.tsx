@@ -8,13 +8,16 @@ import { X } from "lucide-react";
 import { Label } from "@/shared/components/ui/label";
 import { PillInput } from "@/shared/components/ui/pill-input";
 import { useEmailStore } from "@/features/email/state/store";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 type Props = {
   initialRecipients: string[];
 };
 
 export default function Composer({ initialRecipients }: Props) {
-  const { isComposerOpen, setIsComposerOpen } = useEmailStore();
+  const { isComposerOpen, setIsComposerOpen, resetComposer } = useEmailStore();
+  const sendEmail = useMutation(api.email.emails.sendEmail);
 
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -87,6 +90,26 @@ export default function Composer({ initialRecipients }: Props) {
             placeholder="Write your message..."
             className="min-h-60 resize-none"
           />
+        </div>
+
+        <div className="flex flex-row justify-end gap-2">
+          <Button variant="outline" onClick={() => setIsComposerOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={async () => {
+              if (recipientEmails.length === 0) return;
+              await sendEmail({
+                to: recipientEmails,
+                subject,
+                body,
+              });
+              resetComposer();
+              setIsComposerOpen(false);
+            }}
+          >
+            Send
+          </Button>
         </div>
       </div>
     </div>
