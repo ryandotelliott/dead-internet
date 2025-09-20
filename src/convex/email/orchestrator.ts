@@ -33,6 +33,7 @@ export const generateAgentReplies = internalAction({
       const reply = await ctx.runAction(internal.email.agent.reply, {
         agentProfileId: recipient._id,
         threadId: ensured.agentThreadId,
+        emailThreadId: email.threadId,
       });
 
       // Write agent's reply back into the same email thread

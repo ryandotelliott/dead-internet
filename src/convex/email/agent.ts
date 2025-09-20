@@ -1,4 +1,4 @@
-import { api, components } from "@/convex/_generated/api";
+import { api, components, internal } from "@/convex/_generated/api";
 import { Agent } from "@convex-dev/agent";
 import { openai } from "@ai-sdk/openai";
 import { internalAction } from "@/convex/_generated/server";
@@ -95,6 +95,7 @@ export const reply = internalAction({
   args: {
     agentProfileId: v.id("profiles"),
     threadId: v.string(),
+    emailThreadId: v.string(),
   },
   returns: v.object({ subject: v.string(), body: v.string() }),
   handler: async (ctx, args) => {
@@ -118,6 +119,16 @@ export const reply = internalAction({
       userId: args.agentProfileId,
     });
 
+    // Load recent conversation context from the canonical email thread
+    const threadContext = await ctx.runQuery(
+      internal.email.emails.getThreadContext,
+      { emailThreadId: args.emailThreadId, limit: 10 },
+    );
+
+    const contextLines: Array<string> = threadContext.messages.map((m) => {
+      return `${m.authorName} <${m.authorEmail}>: ${m.body}`;
+    });
+
     const result: { object: { subject: string; body: string } } =
       await thread.generateObject({
         schema: EmailSchema.omit({ subject: true }),
@@ -127,11 +138,21 @@ export const reply = internalAction({
           {
             role: "system",
             content:
-              "Draft a short reply to the latest message in this thread. Provide direct answers, propose a next procedural step, and avoid chatter. Maintain coherence and allow one subtle anomaly at most.",
+              "Draft a short reply to the latest message in this thread. Maintain coherence and allow one subtle anomaly at most.",
           },
           {
             role: "system",
             content: `Sender for sign-off: ${sender.name}`,
+          },
+          {
+            role: "system",
+            content: `Subject: ${threadContext.subject || "(no subject)"}`,
+          },
+          {
+            role: "user",
+            content:
+              "Conversation context (oldest to newest):\n" +
+              contextLines.join("\n"),
           },
         ],
       });
