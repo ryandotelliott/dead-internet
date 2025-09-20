@@ -16,14 +16,22 @@ export const authComponent = createClient<DataModel>(components.betterAuth, {
   triggers: {
     user: {
       onCreate: async (ctx, authUser) => {
-        // TODO: Generate persona for the user
-        // TODO: Generate AI profiles to message the user
-
-        await ctx.runMutation(internal.profile.profiles.create, {
-          name: authUser.name,
-          email: authUser.email,
-          userId: authUser._id,
-        });
+        const profileId = await ctx.runMutation(
+          internal.profile.profiles.create,
+          {
+            name: authUser.name,
+            email: authUser.email,
+            userId: authUser._id,
+          },
+        );
+        if (profileId) {
+          await ctx.runMutation(
+            internal.profile.profiles.enqueuePersonaGeneration,
+            {
+              profileId,
+            },
+          );
+        }
       },
     },
   },
