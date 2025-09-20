@@ -9,7 +9,7 @@ export default defineSchema({
     personaSummary: v.optional(v.string()),
     personaCategory: v.optional(v.string()),
   })
-    .index("byUserId", ["userId"])
+    .index("byUser", ["userId"])
     .index("byEmail", ["email"])
     .index("byPersonaCategory", ["personaCategory"]),
 
@@ -17,7 +17,10 @@ export default defineSchema({
     senderProfileId: v.id("profiles"),
     subject: v.string(),
     body: v.string(),
-  }).index("bySender", ["senderProfileId"]),
+    threadId: v.string(),
+  })
+    .index("bySender", ["senderProfileId"])
+    .index("byThread", ["threadId"]),
 
   /*
    * This is a fan-out table, so we can query all emails for a profile quickly

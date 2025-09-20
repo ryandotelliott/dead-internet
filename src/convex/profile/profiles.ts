@@ -24,9 +24,18 @@ export const getCurrent = query({
     if (!user) return null;
     const profile = await ctx.db
       .query("profiles")
-      .withIndex("byUserId", (q) => q.eq("userId", user._id))
+      .withIndex("byUser", (q) => q.eq("userId", user._id))
       .unique();
     return profile ?? null;
+  },
+});
+
+export const getProfileById = query({
+  args: { profileId: v.id("profiles") },
+  returns: v.union(v.null(), ProfileV),
+  handler: async (ctx, args) => {
+    const profile = await ctx.db.get(args.profileId);
+    return profile;
   },
 });
 
@@ -42,7 +51,7 @@ export const create = internalMutation({
   handler: async (ctx, args) => {
     const existingProfile = await ctx.db
       .query("profiles")
-      .withIndex("byUserId", (q) => q.eq("userId", args.userId))
+      .withIndex("byUser", (q) => q.eq("userId", args.userId))
       .unique();
 
     if (existingProfile) {
@@ -80,7 +89,7 @@ export const update = mutation({
 
     const profile = await ctx.db
       .query("profiles")
-      .withIndex("byUserId", (q) => q.eq("userId", user._id))
+      .withIndex("byUser", (q) => q.eq("userId", user._id))
       .unique();
 
     if (!profile) {

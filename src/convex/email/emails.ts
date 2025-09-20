@@ -42,7 +42,7 @@ export const listMailboxEntries = query({
 
     const profile: Doc<"profiles"> | null = await ctx.db
       .query("profiles")
-      .withIndex("byUserId", (q) => q.eq("userId", user._id))
+      .withIndex("byUser", (q) => q.eq("userId", user._id))
       .unique();
 
     if (!profile) {
@@ -113,7 +113,7 @@ export const sendEmail = mutation({
 
     const senderProfile: Doc<"profiles"> | null = await ctx.db
       .query("profiles")
-      .withIndex("byUserId", (q) => q.eq("userId", user._id))
+      .withIndex("byUser", (q) => q.eq("userId", user._id))
       .unique();
 
     if (!senderProfile) {
@@ -124,6 +124,7 @@ export const sendEmail = mutation({
       senderProfileId: senderProfile._id,
       subject: args.subject,
       body: args.body,
+      threadId: "",
     });
 
     // Sender's Sent mailbox entry
@@ -176,7 +177,7 @@ export const markMailboxEntryRead = mutation({
 
     const myProfile: Doc<"profiles"> | null = await ctx.db
       .query("profiles")
-      .withIndex("byUserId", (q) => q.eq("userId", user._id))
+      .withIndex("byUser", (q) => q.eq("userId", user._id))
       .unique();
 
     if (!myProfile) {

@@ -3,12 +3,48 @@
 import { internalAction } from "@/convex/_generated/server";
 import { v } from "convex/values";
 import { z } from "zod";
-import { openai } from "@/shared/lib/openai";
-import { zodTextFormat } from "openai/helpers/zod";
+import { generateObject } from "ai";
 import { internal } from "@/convex/_generated/api";
+import { dedent } from "ts-dedent";
 
-const SYSTEM_PROMPT =
-  "You craft sinister yet believable email correspondent personas for a dystopian corporate network.";
+const SYSTEM_PROMPT = `
+You simulate an aging corporate intranet directory inside a "dead internet" world.
+Produce personas that feel plausible at a glance yet subtly uncanny—like fragments of
+profiles that survived migrations, audits, and quiet data corruptions.
+
+Tone and constraints:
+- Professional, affectless, and corporate-first, with ossified jargon and softened euphemisms.
+- Uncanny, but not comedic. No overt horror; prefer mild drift and bureaucratic menace.
+- Allow 0-1 minor anomalies (e.g., obsolete job titles, slightly anachronistic phrasing,
+  or a harmless bracketed tag like [REDACTED] once). Never break grammar or validity.
+- Output must remain internally consistent and believable.
+- Do not include markdown or lists in fields.
+
+Field requirements:
+- name: a realistic full name suitable for an enterprise directory.
+- email: valid and routable, using the @deadnet.com domain.
+- summary: one sentence (24-320 chars) that hints at role, tone, and goals within DeadNet,
+ touching on performance optics, risk management, or procedural escalation.
+`;
+
+enum PersonaCategory {
+  security = "security",
+  compliance = "compliance",
+  growth = "growth",
+  archives = "archives",
+  liaison = "liaison",
+  operations = "operations",
+  support = "support",
+  legal = "legal",
+  engineering = "engineering",
+  unknown = "unknown",
+}
+
+const randomCategory = () => {
+  return Object.values(PersonaCategory)[
+    Math.floor(Math.random() * Object.values(PersonaCategory).length)
+  ];
+};
 
 export const run = internalAction({
   args: {
@@ -18,13 +54,14 @@ export const run = internalAction({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const persona = await generatePersonaForCategory(args.context);
+    const category = randomCategory();
+    const persona = await generatePersonaForCategory(category, args.context);
 
     await ctx.runMutation(internal.profile.profiles.create, {
       name: persona.name,
       email: args.emailAddress ?? persona.email,
       personaSummary: persona.summary,
-      personaCategory: PersonaCategory.random,
+      personaCategory: category,
     });
 
     return null;
@@ -36,55 +73,51 @@ const PersonaSchema = z.object({
     .string()
     .min(3)
     .max(80)
-    .describe("Compelling dystopian correspondent name."),
+    .describe("Realistic full name suitable for an enterprise directory."),
   email: z
     .string()
     .email()
-    .describe("Email address of the persona. Domain must be @deadnet.com"),
+    .describe("Valid and routable, using the @deadnet.com domain."),
   summary: z
     .string()
     .min(24)
     .max(320)
     .describe(
-      "One-sentence overview of tone, role, and goals inside the DeadNet bureaucracy.",
+      "One sentence (24-320 chars) that hints at role, tone, and goals within DeadNet, touching on performance optics, risk management, or procedural escalation.",
     ),
 });
 
 type Persona = z.infer<typeof PersonaSchema>;
 
-enum PersonaCategory {
-  security = "security",
-  compliance = "compliance",
-  growth = "growth",
-  archives = "archives",
-  liaison = "liaison",
-  random = "random",
-}
-
 export const generatePersonaForCategory = async (
+  category: PersonaCategory,
   context?: string,
 ): Promise<Persona> => {
-  const category = PersonaCategory.random;
-
   try {
-    const response = await openai.responses.parse({
+    const response = await generateObject({
       model: "gpt-5-mini",
-      input: [
+      schema: PersonaSchema,
+      messages: [
         {
           role: "system",
           content: SYSTEM_PROMPT,
         },
         {
           role: "user",
-          content: `Generate an email persona for a user in the ${category} division. The summary should stay in-universe and hint at motive, tone, and how they pressure or manipulate users.`,
+          content: dedent(
+            `Generate a persona for the ${category} division within DeadNet.
+            ${context ? `Context: ${context}\n` : ""}
+            Requirements:
+            - Provide realistic name and a valid @deadnet.com email.
+            - Summary is a single sentence (24-320 chars), dead-internet corporate tone.
+            - Subtle strangeness allowed, but keep it plausible and internally consistent.
+            - No markdown, no lists, no meta commentary.`,
+          ),
         },
       ],
-      text: {
-        format: zodTextFormat(PersonaSchema, "persona"),
-      },
     });
 
-    const output = response.output_parsed;
+    const output = response.object;
     if (!output) {
       throw new Error("OpenAI returned no text");
     }
