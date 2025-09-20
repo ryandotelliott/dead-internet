@@ -12,6 +12,31 @@ const emailAgent = new Agent(components.agent, {
   languageModel: openai.chat("gpt-5-mini"),
 });
 
+export const ensureThread = internalAction({
+  args: { emailThreadId: v.string(), agentProfileId: v.id("profiles") },
+  returns: v.object({ agentThreadId: v.string() }),
+  handler: async (ctx, args): Promise<{ agentThreadId: string }> => {
+    const existing: { agentThreadId: string } | null = await ctx.runQuery(
+      internal.email.agentThreads.getAgentThread,
+      args,
+    );
+
+    if (existing) return existing;
+
+    const { threadId } = await emailAgent.createThread(ctx, {
+      userId: args.agentProfileId,
+    });
+
+    await ctx.runMutation(internal.email.agentThreads.link, {
+      emailThreadId: args.emailThreadId,
+      agentProfileId: args.agentProfileId,
+      agentThreadId: threadId,
+    });
+
+    return { agentThreadId: threadId };
+  },
+});
+
 const EmailSchema = z.object({
   subject: z
     .string()
@@ -121,13 +146,15 @@ export const reply = internalAction({
 
     // Load recent conversation context from the canonical email thread
     const threadContext = await ctx.runQuery(
-      internal.email.emails.getThreadContext,
+      internal.email.threads.getThreadContext,
       { emailThreadId: args.emailThreadId, limit: 10 },
     );
 
-    const contextLines: Array<string> = threadContext.messages.map((m) => {
-      return `${m.authorName} <${m.authorEmail}>: ${m.body}`;
-    });
+    const contextLines: Array<string> = threadContext.messages.map(
+      (m: { authorName: string; authorEmail: string; body: string }) => {
+        return `${m.authorName} <${m.authorEmail}>: ${m.body}`;
+      },
+    );
 
     const result: { object: { subject: string; body: string } } =
       await thread.generateObject({
