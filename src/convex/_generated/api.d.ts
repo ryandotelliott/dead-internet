@@ -11,7 +11,8 @@
 import type * as auth from "../auth.js";
 import type * as email_emails from "../email/emails.js";
 import type * as http from "../http.js";
-import type * as profile from "../profile.js";
+import type * as profile_generatePersona from "../profile/generatePersona.js";
+import type * as profile_profiles from "../profile/profiles.js";
 
 import type {
   ApiFromModules,
@@ -31,7 +32,8 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   "email/emails": typeof email_emails;
   http: typeof http;
-  profile: typeof profile;
+  "profile/generatePersona": typeof profile_generatePersona;
+  "profile/profiles": typeof profile_profiles;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 

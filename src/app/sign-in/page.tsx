@@ -1,4 +1,4 @@
-import AuthTabs from "./components/AuthTabs";
+import AuthTabs from "@/app/sign-in/components/AuthTabs";
 
 export default function SignInPage() {
   return (

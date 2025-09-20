@@ -5,7 +5,7 @@ import React, { useMemo } from "react";
 import { useEmailStore } from "@/features/email/state/store";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { cn } from "@/shared/lib/utils";
+import { cn } from "@/shared/lib/ui-utils";
 
 type Props = {
   id: Id<"mailboxEntries">;

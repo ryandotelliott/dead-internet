@@ -6,9 +6,12 @@ export default defineSchema({
     userId: v.optional(v.string()),
     name: v.string(),
     email: v.string(),
+    personaSummary: v.optional(v.string()),
+    personaCategory: v.optional(v.string()),
   })
     .index("byUserId", ["userId"])
-    .index("byEmail", ["email"]),
+    .index("byEmail", ["email"])
+    .index("byPersonaCategory", ["personaCategory"]),
 
   emails: defineTable({
     senderProfileId: v.id("profiles"),

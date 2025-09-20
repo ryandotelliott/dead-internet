@@ -3,7 +3,7 @@
 import * as React from "react";
 import { X } from "lucide-react";
 
-import { cn } from "@/shared/lib/utils";
+import { cn } from "@/shared/lib/ui-utils";
 import { Button } from "./button";
 
 type PillValidator = (value: string, current: Array<string>) => boolean;

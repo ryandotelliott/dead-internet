@@ -1,25 +1,15 @@
-import { mutation, query } from "../_generated/server";
+import { mutation, query } from "@/convex/_generated/server";
 import { v, Infer } from "convex/values";
-import { api } from "../_generated/api";
-import { Doc } from "../_generated/dataModel";
-import { authComponent } from "../auth";
+import { Doc, Id } from "@/convex/_generated/dataModel";
+import { authComponent } from "@/convex/auth";
 
-// — Validators —
-export const emailV = v.object({
-  _id: v.id("emails"),
-  _creationTime: v.number(),
-  senderProfileId: v.id("profiles"),
-  subject: v.string(),
-  body: v.string(),
-});
-
-export const MailboxFolderV = v.union(
+const MailboxFolderV = v.union(
   v.literal("inbox"),
   v.literal("sent"),
   v.literal("trash"),
 );
 
-export const MailboxEntryV = v.object({
+const MailboxEntryV = v.object({
   _id: v.id("mailboxEntries"),
   _creationTime: v.number(),
   senderProfileId: v.id("profiles"),
@@ -38,7 +28,6 @@ export const MailboxEntryV = v.object({
   body: v.string(),
 });
 
-export type Email = Infer<typeof emailV>;
 export type MailboxEntry = Infer<typeof MailboxEntryV>;
 
 export const listMailboxEntries = query({
@@ -97,6 +86,16 @@ export const listMailboxEntries = query({
   },
 });
 
+const emailV = v.object({
+  _id: v.id("emails"),
+  _creationTime: v.number(),
+  senderProfileId: v.id("profiles"),
+  subject: v.string(),
+  body: v.string(),
+});
+
+export type Email = Infer<typeof emailV>;
+
 export const sendEmail = mutation({
   args: {
     to: v.array(v.string()),
@@ -104,7 +103,8 @@ export const sendEmail = mutation({
     body: v.string(),
   },
   returns: v.object({ emailId: v.id("emails") }),
-  async handler(ctx, args): Promise<{ emailId: Doc<"emails">["_id"] }> {
+  async handler(ctx, args): Promise<{ emailId: Id<"emails"> }> {
+    // TODO: Need to allow sending from functions directly
     const user = await authComponent.getAuthUser(ctx);
 
     if (!user) {
@@ -120,7 +120,7 @@ export const sendEmail = mutation({
       throw new Error("Sender profile not found");
     }
 
-    const emailId: Doc<"emails">["_id"] = await ctx.db.insert("emails", {
+    const emailId: Id<"emails"> = await ctx.db.insert("emails", {
       senderProfileId: senderProfile._id,
       subject: args.subject,
       body: args.body,
@@ -138,24 +138,20 @@ export const sendEmail = mutation({
     });
 
     // Recipient Inbox entries (auto-create profiles for unknown emails)
-    for (const email of args.to) {
+    for (const recipientEmail of args.to) {
       const existingRecipient: Doc<"profiles"> | null = await ctx.db
         .query("profiles")
-        .withIndex("byEmail", (q) => q.eq("email", email))
+        .withIndex("byEmail", (q) => q.eq("email", recipientEmail))
         .unique();
 
-      const recipientProfile: Doc<"profiles"> =
-        existingRecipient ??
-        (await ctx.db.get(
-          await ctx.db.insert("profiles", {
-            name: email.split("@")[0] ?? email,
-            email,
-          }),
-        ))!;
+      // TODO: Create profile if it doesn't exist
+      if (!existingRecipient) {
+        throw new Error("Recipient profile not found");
+      }
 
       await ctx.db.insert("mailboxEntries", {
         senderProfileId: senderProfile._id,
-        ownerProfileId: recipientProfile._id,
+        ownerProfileId: existingRecipient._id,
         emailId,
         role: "to",
         folder: "inbox",
