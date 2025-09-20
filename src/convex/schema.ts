@@ -37,4 +37,14 @@ export default defineSchema({
     .index("byOwner", ["ownerProfileId"])
     .index("byOwnerFolder", ["ownerProfileId", "folder"])
     .index("byEmail", ["emailId"]),
+
+  // Mapping between user-visible email threads and per-agent conversation threads
+  agentThreads: defineTable({
+    emailThreadId: v.string(),
+    agentProfileId: v.id("profiles"),
+    agentThreadId: v.string(),
+  })
+    .index("byEmailThreadAndAgent", ["emailThreadId", "agentProfileId"])
+    .index("byEmailThread", ["emailThreadId"])
+    .index("byAgentThreadId", ["agentThreadId"]),
 });

@@ -10,9 +10,12 @@
 
 import type * as auth from "../auth.js";
 import type * as email_agent from "../email/agent.js";
+import type * as email_agentEnsure from "../email/agentEnsure.js";
+import type * as email_agentThreads from "../email/agentThreads.js";
 import type * as email_emails from "../email/emails.js";
+import type * as email_orchestrator from "../email/orchestrator.js";
 import type * as http from "../http.js";
-import type * as profile_generate from "../profile/generate.js";
+import type * as profile_agent from "../profile/agent.js";
 import type * as profile_profiles from "../profile/profiles.js";
 
 import type {
@@ -32,9 +35,12 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   "email/agent": typeof email_agent;
+  "email/agentEnsure": typeof email_agentEnsure;
+  "email/agentThreads": typeof email_agentThreads;
   "email/emails": typeof email_emails;
+  "email/orchestrator": typeof email_orchestrator;
   http: typeof http;
-  "profile/generate": typeof profile_generate;
+  "profile/agent": typeof profile_agent;
   "profile/profiles": typeof profile_profiles;
 }>;
 declare const fullApiWithMounts: typeof fullApi;

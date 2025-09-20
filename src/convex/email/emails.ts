@@ -1,7 +1,14 @@
-import { mutation, query } from "@/convex/_generated/server";
+import {
+  internalMutation,
+  mutation,
+  query,
+  internalQuery,
+} from "@/convex/_generated/server";
 import { v, Infer } from "convex/values";
-import { Doc, Id } from "@/convex/_generated/dataModel";
+import { DataModel, Doc, Id } from "@/convex/_generated/dataModel";
 import { authComponent } from "@/convex/auth";
+import { GenericMutationCtx } from "convex/server";
+import { internal } from "@/convex/_generated/api";
 
 const MailboxFolderV = v.union(
   v.literal("inbox"),
@@ -33,7 +40,7 @@ export type MailboxEntry = Infer<typeof MailboxEntryV>;
 export const listMailboxEntries = query({
   args: { folder: MailboxFolderV },
   returns: v.array(MailboxEntryV),
-  async handler(ctx, args): Promise<Array<MailboxEntry>> {
+  async handler(ctx, args) {
     const user = await authComponent.getAuthUser(ctx);
 
     if (!user) {
@@ -86,29 +93,64 @@ export const listMailboxEntries = query({
   },
 });
 
-const emailV = v.object({
-  _id: v.id("emails"),
-  _creationTime: v.number(),
+const NewEmailV = v.object({
   senderProfileId: v.id("profiles"),
+  toProfileIds: v.array(v.id("profiles")),
   subject: v.string(),
   body: v.string(),
+  threadId: v.optional(v.string()),
 });
 
-export type Email = Infer<typeof emailV>;
+// Shared helper to write the email and mailbox entries
+async function writeEmailAndEntries(
+  ctx: GenericMutationCtx<DataModel>,
+  params: Infer<typeof NewEmailV>,
+): Promise<Id<"emails">> {
+  const emailId: Id<"emails"> = await ctx.db.insert("emails", {
+    senderProfileId: params.senderProfileId,
+    subject: params.subject,
+    body: params.body,
+    threadId: params.threadId ?? crypto.randomUUID(),
+  });
+
+  await ctx.db.insert("mailboxEntries", {
+    senderProfileId: params.senderProfileId,
+    ownerProfileId: params.senderProfileId,
+    emailId,
+    role: "to",
+    folder: "sent",
+    read: true,
+    subject: params.subject,
+  });
+
+  for (const recipientId of params.toProfileIds) {
+    await ctx.db.insert("mailboxEntries", {
+      senderProfileId: params.senderProfileId,
+      ownerProfileId: recipientId,
+      emailId,
+      role: "to",
+      folder: "inbox",
+      read: false,
+      subject: params.subject,
+    });
+  }
+
+  return emailId;
+}
 
 export const sendEmail = mutation({
-  args: {
+  args: v.object({
     to: v.array(v.string()),
     subject: v.string(),
     body: v.string(),
-  },
+    threadId: v.optional(v.string()),
+  }),
   returns: v.object({ emailId: v.id("emails") }),
   async handler(ctx, args): Promise<{ emailId: Id<"emails"> }> {
-    // TODO: Need to allow sending from functions directly
     const user = await authComponent.getAuthUser(ctx);
 
-    if (!user) {
-      throw new Error("Not authenticated");
+    if (!args.to.length) {
+      throw new Error("Recipients are required");
     }
 
     const senderProfile: Doc<"profiles"> | null = await ctx.db
@@ -120,46 +162,36 @@ export const sendEmail = mutation({
       throw new Error("Sender profile not found");
     }
 
-    const emailId: Id<"emails"> = await ctx.db.insert("emails", {
-      senderProfileId: senderProfile._id,
-      subject: args.subject,
-      body: args.body,
-      threadId: "",
-    });
-
-    // Sender's Sent mailbox entry
-    await ctx.db.insert("mailboxEntries", {
-      senderProfileId: senderProfile._id,
-      ownerProfileId: senderProfile._id,
-      emailId,
-      role: "to",
-      folder: "sent",
-      read: true,
-      subject: args.subject,
-    });
-
-    // Recipient Inbox entries (auto-create profiles for unknown emails)
+    const toProfileIds: Array<Id<"profiles">> = [];
     for (const recipientEmail of args.to) {
       const existingRecipient: Doc<"profiles"> | null = await ctx.db
         .query("profiles")
         .withIndex("byEmail", (q) => q.eq("email", recipientEmail))
         .unique();
 
-      // TODO: Create profile if it doesn't exist
+      // TODO: Create a new profile if not found
       if (!existingRecipient) {
-        throw new Error("Recipient profile not found");
+        console.warn("Recipient profile not found", recipientEmail);
+        continue;
       }
 
-      await ctx.db.insert("mailboxEntries", {
-        senderProfileId: senderProfile._id,
-        ownerProfileId: existingRecipient._id,
-        emailId,
-        role: "to",
-        folder: "inbox",
-        read: false,
-        subject: args.subject,
-      });
+      toProfileIds.push(existingRecipient._id);
     }
+
+    const emailId = await writeEmailAndEntries(ctx, {
+      senderProfileId: senderProfile._id,
+      toProfileIds,
+      subject: args.subject,
+      body: args.body,
+      threadId: args.threadId,
+    });
+
+    // Trigger agent replies asynchronously
+    await ctx.scheduler.runAfter(
+      0,
+      internal.email.orchestrator.generateAgentReplies,
+      { emailId },
+    );
 
     return { emailId };
   },
@@ -170,10 +202,6 @@ export const markMailboxEntryRead = mutation({
   returns: v.null(),
   async handler(ctx, args): Promise<null> {
     const user = await authComponent.getAuthUser(ctx);
-
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
 
     const myProfile: Doc<"profiles"> | null = await ctx.db
       .query("profiles")
@@ -194,5 +222,98 @@ export const markMailboxEntryRead = mutation({
 
     await ctx.db.patch(args.mailboxEntryId, { read: args.read });
     return null;
+  },
+});
+
+/**
+ * Write an email directly to bypass auth checks; used for agent-generated emails.
+ */
+export const writeDirect = internalMutation({
+  args: NewEmailV,
+  returns: v.object({ emailId: v.id("emails") }),
+  async handler(ctx, args) {
+    const emailId = await writeEmailAndEntries(ctx, {
+      senderProfileId: args.senderProfileId,
+      toProfileIds: args.toProfileIds,
+      subject: args.subject,
+      body: args.body,
+      threadId: args.threadId,
+    });
+
+    return { emailId };
+  },
+});
+
+// Internal helper query to fetch email details and recipients
+export const getEmailDetails = internalQuery({
+  args: { emailId: v.id("emails") },
+  returns: v.union(
+    v.null(),
+    v.object({
+      email: v.object({
+        _id: v.id("emails"),
+        senderProfileId: v.id("profiles"),
+        subject: v.string(),
+        body: v.string(),
+        threadId: v.string(),
+      }),
+      recipients: v.array(
+        v.object({
+          _id: v.id("profiles"),
+          userId: v.union(v.string(), v.null()),
+          email: v.string(),
+          name: v.string(),
+        }),
+      ),
+    }),
+  ),
+  async handler(ctx, args) {
+    const email = await ctx.db.get(args.emailId);
+    if (!email) return null;
+
+    // collect all mailbox entries for this email and resolve owners
+    const entries = await ctx.db
+      .query("mailboxEntries")
+      .withIndex("byEmail", (q) => q.eq("emailId", args.emailId))
+      .collect();
+
+    const recipientIds = new Set<Id<"profiles">>();
+    for (const entry of entries) {
+      if (
+        entry.ownerProfileId !== email.senderProfileId &&
+        entry.role === "to"
+      ) {
+        recipientIds.add(entry.ownerProfileId);
+      }
+    }
+
+    const recipients = [] as Array<{
+      _id: Id<"profiles">;
+      userId: string | null;
+      email: string;
+      name: string;
+    }>;
+    for (const profileId of recipientIds) {
+      const profile = await ctx.db.get(profileId);
+      if (profile) {
+        recipients.push({
+          _id: profile._id,
+          userId: profile.userId ?? null,
+          email: profile.email,
+          name: profile.name,
+        });
+      }
+    }
+
+    return {
+      email: {
+        _id: email._id,
+        senderProfileId: email.senderProfileId,
+        subject: email.subject,
+        body: email.body,
+        threadId: email.threadId,
+      },
+      recipients,
+    };
   },
 });
