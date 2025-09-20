@@ -15,7 +15,7 @@ const ProfileV = v.object({
 
 export type Profile = Infer<typeof ProfileV>;
 
-export const getCurrentProfile = query({
+export const getCurrent = query({
   args: {},
   returns: v.union(v.null(), ProfileV),
   handler: async (ctx) => {
@@ -30,7 +30,7 @@ export const getCurrentProfile = query({
   },
 });
 
-export const createProfile = internalMutation({
+export const create = internalMutation({
   args: {
     userId: v.optional(v.string()),
     name: v.string(),
@@ -68,7 +68,7 @@ export const UpdateProfileV = v.object({
   personaCategory: v.optional(v.string()),
 });
 
-export const updateProfile = mutation({
+export const update = mutation({
   args: UpdateProfileV,
   returns: v.null(),
   handler: async (ctx, args) => {
