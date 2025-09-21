@@ -19,18 +19,13 @@ export const generateAgentReplies = internalAction({
     // Potentially, we could pass all recipients to the LLM and it will draft replies for everyone that's appropriate.
     for (const recipient of recipients) {
       const isAgent = recipient.userId == undefined; // no userId => agent persona
-
-      console.log("isAgent for recipient", recipient.email, isAgent);
       if (!isAgent) continue;
 
-      console.log("Ensuring thread for agent", recipient._id);
       // Ensure mapping to an agent conversation thread
       const ensured = await ctx.runAction(internal.email.agent.ensureThread, {
         emailThreadId: email.threadId,
         agentProfileId: recipient._id,
       });
-
-      console.log("Ensured thread for agent", recipient._id, ensured);
 
       // Ask the agent to reply in its own conversation thread
       const reply = await ctx.runAction(internal.email.agent.reply, {
@@ -38,8 +33,6 @@ export const generateAgentReplies = internalAction({
         threadId: ensured.agentThreadId,
         emailThreadId: email.threadId,
       });
-
-      console.log("Replied to agent", recipient._id, reply);
 
       // Write agent's reply back into the same email thread
       await ctx.runMutation(internal.email.emails.writeDirect, {

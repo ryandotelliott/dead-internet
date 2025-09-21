@@ -7,25 +7,31 @@ import { z } from "zod";
 
 const personaAgent = new Agent(components.agent, {
   name: "personaAgent",
-  languageModel: openai.responses("gpt-5-mini"),
+  languageModel: openai.responses("gpt-4.1-mini"),
 });
 
 const PersonaSchema = z.object({
-  name: z.string(),
-  email: z.string(),
-  summary: z.string(),
-  category: z.enum([
-    "security",
-    "compliance",
-    "growth",
-    "archives",
-    "liaison",
-    "operations",
-    "support",
-    "legal",
-    "engineering",
-    "unknown",
-  ]),
+  name: z.string().describe("A full name for the persona."),
+  email: z.string().describe("An email address for the persona."),
+  summary: z
+    .string()
+    .describe("A concise summary of the persona's personality and role."),
+  category: z
+    .enum([
+      "security",
+      "compliance",
+      "growth",
+      "archives",
+      "liaison",
+      "operations",
+      "support",
+      "legal",
+      "engineering",
+      "unknown",
+    ])
+    .describe(
+      "A rough category that represents the persona's role and responsibilities.",
+    ),
 });
 
 export const generatePersonaForProfile = internalAction({
@@ -53,15 +59,16 @@ export const generatePersonaForProfile = internalAction({
     const result: { object: z.infer<typeof PersonaSchema> } =
       await thread.generateObject({
         schema: PersonaSchema,
+        schemaName: "Persona",
+        mode: "json",
         system:
-          "You simulate an aging corporate intranet directory in a 'dead internet' world. Produce plausible but faintly uncanny personas.",
+          "You simulate an aging corporate intranet directory in a 'dead internet' world. Produce plausible but faintly uncanny personas. Provide all output in JSON, ensure all fields are filled out.",
         prompt: [
           {
             role: "system",
             content: prompt,
           },
         ],
-        maxOutputTokens: 800,
       });
 
     const { name, email, summary, category } = result.object;

@@ -9,7 +9,7 @@ import dedent from "ts-dedent";
 
 const emailAgent = new Agent(components.agent, {
   name: "emailAgent",
-  languageModel: openai.responses("gpt-5-mini"),
+  languageModel: openai.responses("gpt-4.1-mini"),
 });
 
 export const ensureThread = internalAction({
@@ -41,12 +41,12 @@ const EmailSchema = z.object({
   subject: z
     .string()
     .describe(
-      "Concise, plausible corporate subject (no quotes, no brackets, no emojis). Up to 120 characters.",
+      "Concise, plausible corporate subject (no quotes, no brackets, no emojis). From 5 to 120 characters.",
     ),
   body: z
     .string()
     .describe(
-      "Plain-text email in an uncanny corporate tone. No markdown. One subtle anomaly allowed (e.g., obsolete jargon or [REDACTED]). Up to 3000 characters.",
+      "Plain-text email in an uncanny corporate tone. No markdown. One subtle anomaly allowed (e.g., obsolete jargon). From 50 to 3000 characters.",
     ),
 });
 
@@ -83,8 +83,10 @@ export const create = internalAction({
     const result: { object: { subject: string; body: string } } =
       await thread.generateObject({
         schema: EmailSchema,
+        schemaName: "EmailNew",
+        mode: "json",
         system:
-          "You simulate an aging enterprise mail client within a dead-internet corporate network. Draft emails with a faint bureaucratic eeriness.",
+          "You simulate an aging enterprise mail client within a dead-internet corporate network. Draft emails with a faint bureaucratic eeriness. Provide all output in JSON, ensure all fields are filled out.",
         prompt: [
           {
             role: "system",
@@ -101,7 +103,6 @@ export const create = internalAction({
             ),
           },
         ],
-        maxOutputTokens: 3000,
       });
 
     const { subject, body } = result.object;
@@ -151,8 +152,10 @@ export const reply = internalAction({
 
     const result: { object: { body: string } } = await thread.generateObject({
       schema: EmailSchema.omit({ subject: true }),
+      schemaName: "EmailReply",
+      mode: "json",
       system:
-        "You simulate an aging enterprise mail client within a dead-internet corporate network. Replies should be concise, procedural, and faintly uncanny.",
+        "You simulate an aging enterprise mail client within a dead-internet corporate network. Replies should be concise, procedural, and faintly uncanny. Provide all output in JSON, ensure all fields are filled out.",
       prompt: [
         {
           role: "system",
