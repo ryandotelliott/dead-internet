@@ -46,7 +46,7 @@ export default function Composer({ initialRecipients }: Props) {
 
   const emailValidator = useMemo(() => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return (value: string) => re.test(value);
+    return (value: string) => value.length <= 150 && re.test(value);
   }, []);
 
   if (!isComposerOpen) return null;
@@ -76,6 +76,7 @@ export default function Composer({ initialRecipients }: Props) {
               value={recipients}
               onValueChange={setRecipients}
               validator={(v) => emailValidator(v)}
+              inputProps={{ maxLength: 150 }}
             />
           </div>
         </div>

@@ -27,6 +27,12 @@ export const MailboxEntryV = v.object({
 
   // Email derived fields
   body: v.string(),
+  recipients: v.array(
+    v.object({
+      name: v.string(),
+      email: v.string(),
+    }),
+  ),
 });
 
 export type MailboxEntry = Infer<typeof MailboxEntryV>;
@@ -96,6 +102,13 @@ export const sendEmail = mutation({
 
     if (!senderProfile) {
       throw new Error("Sender profile not found");
+    }
+
+    // Enforce max recipient email length of 150 on server
+    for (const r of args.to) {
+      if (r.length > 150) {
+        throw new Error("Recipient email exceeds 150 characters");
+      }
     }
 
     await ctx.scheduler.runAfter(

@@ -375,7 +375,7 @@ function DefaultPill({ index, label }: DefaultPillProps) {
       }
       title={label}
     >
-      <span className="max-w-[20ch] truncate">{label}</span>
+      <span className="break-all">{label}</span>
       <Button
         variant="ghost"
         size="icon"

@@ -23,7 +23,12 @@ export default function Viewer() {
 
   return (
     <div className="flex flex-col h-full w-full">
-      <ViewerHeader subject={selectedMessage.subject} />
+      <ViewerHeader
+        subject={selectedMessage.subject}
+        fromName={selectedMessage.senderName}
+        fromEmail={selectedMessage.senderEmail}
+        recipients={selectedMessage.recipients}
+      />
 
       <div className="flex flex-col h-full w-full p-2">
         <ShadowDom html={selectedMessage.body} />

@@ -49,11 +49,38 @@ export const listMailboxEntries = query({
         continue;
       }
 
+      // Compute recipients by collecting all owners of this email across mailbox entries,
+      // excluding the sender's own "sent" entry
+      const relatedEntries: Array<Doc<"mailboxEntries">> = await ctx.db
+        .query("mailboxEntries")
+        .withIndex("byEmail", (q) => q.eq("emailId", entry.emailId))
+        .collect();
+
+      const recipientProfileIds = Array.from(
+        new Set(
+          relatedEntries
+            .map((e) => e.ownerProfileId)
+            .filter((pid) => pid !== entry.senderProfileId),
+        ),
+      );
+
+      const recipientDocs: Array<Doc<"profiles">> = [];
+      for (const pid of recipientProfileIds) {
+        const profileDoc = await ctx.db.get(pid);
+        if (profileDoc) recipientDocs.push(profileDoc);
+      }
+
+      const recipients = recipientDocs.map((p) => ({
+        name: p.name,
+        email: p.email,
+      }));
+
       out.push({
         ...entry,
         senderName: senderProfile.name,
         senderEmail: senderProfile.email,
         body: email.body,
+        recipients,
       });
     }
     return out;
