@@ -7,13 +7,13 @@ import { z } from "zod";
 
 const personaAgent = new Agent(components.agent, {
   name: "personaAgent",
-  languageModel: openai.chat("gpt-5-mini"),
+  languageModel: openai.responses("gpt-5-mini"),
 });
 
 const PersonaSchema = z.object({
-  name: z.string().min(3).max(80),
-  email: z.string().email(),
-  summary: z.string().min(24).max(320),
+  name: z.string(),
+  email: z.string(),
+  summary: z.string(),
   category: z.enum([
     "security",
     "compliance",
@@ -31,13 +31,24 @@ const PersonaSchema = z.object({
 export const generatePersonaForProfile = internalAction({
   args: {
     profileId: v.id("profiles"),
-    context: v.optional(v.string()),
+    emailAddress: v.optional(v.string()),
+    emailBody: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
     const { thread } = await personaAgent.createThread(ctx, {
       userId: args.profileId,
     });
+
+    let prompt = `Generate a new persona including a full name, email address, and summary of the personality & role. Use a corporate tone. A subtle anomoly in the profile is allowed.`;
+
+    if (args.emailAddress) {
+      prompt = `Generate a new persona for ${args.emailAddress}.`;
+
+      if (args.emailBody) {
+        prompt += ` The first message sent to this persona is: ${args.emailBody}. Don't reference this message in the summary, just use it as context for the persona.`;
+      }
+    }
 
     const result: { object: z.infer<typeof PersonaSchema> } =
       await thread.generateObject({
@@ -47,15 +58,18 @@ export const generatePersonaForProfile = internalAction({
         prompt: [
           {
             role: "system",
-            content: `Generate persona fields for the profile. ${args.context ?? ""}\n- name: realistic full name.\n- email: valid @deadnet.com.\n- summary: single sentence (24-320 chars), corporate tone, subtle anomaly allowed.\n- category: choose from provided set.`,
+            content: prompt,
           },
         ],
+        maxOutputTokens: 800,
       });
 
     const { name, email, summary, category } = result.object;
 
-    await ctx.runMutation(internal.profile.profiles.setPersona, {
+    await ctx.runMutation(internal.profile.profiles.update, {
       profileId: args.profileId,
+      name: name,
+      email: email,
       personaSummary: summary,
       personaCategory: category,
     });

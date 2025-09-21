@@ -1,4 +1,4 @@
-import { internalMutation, mutation, query } from "@/convex/_generated/server";
+import { internalMutation, query } from "@/convex/_generated/server";
 import { internal } from "@/convex/_generated/api";
 import { Infer, v } from "convex/values";
 import { authComponent } from "@/convex/auth";
@@ -41,6 +41,18 @@ export const getProfileById = query({
   },
 });
 
+export const getByEmail = query({
+  args: { email: v.string() },
+  returns: v.union(v.null(), ProfileV),
+  handler: async (ctx, args) => {
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("byEmail", (q) => q.eq("email", args.email))
+      .unique();
+    return profile ?? null;
+  },
+});
+
 export const create = internalMutation({
   args: {
     userId: v.optional(v.string()),
@@ -71,6 +83,26 @@ export const create = internalMutation({
   },
 });
 
+export const ensureByEmail = internalMutation({
+  args: { email: v.string() },
+  returns: v.id("profiles"),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("profiles")
+      .withIndex("byEmail", (q) => q.eq("email", args.email))
+      .unique();
+    if (existing) return existing._id;
+
+    const profileId = await ctx.db.insert("profiles", {
+      name: "",
+      email: args.email,
+      personaSummary: undefined,
+      personaCategory: undefined,
+    });
+    return profileId;
+  },
+});
+
 export const UpdateProfileV = v.object({
   profileId: v.id("profiles"),
   name: v.optional(v.string()),
@@ -79,20 +111,11 @@ export const UpdateProfileV = v.object({
   personaCategory: v.optional(v.string()),
 });
 
-export const update = mutation({
+export const update = internalMutation({
   args: UpdateProfileV,
   returns: v.null(),
   handler: async (ctx, args) => {
-    const user = await authComponent.getAuthUser(ctx);
-
-    if (!user) {
-      throw new Error("Not authenticated");
-    }
-
-    const profile = await ctx.db
-      .query("profiles")
-      .withIndex("byUser", (q) => q.eq("userId", user._id))
-      .unique();
+    const profile = await ctx.db.get(args.profileId);
 
     if (!profile) {
       throw new Error("Profile not found for user");
@@ -113,24 +136,7 @@ export const update = mutation({
   },
 });
 
-// Internal helper used by background jobs/triggers to set persona fields
-export const setPersona = internalMutation({
-  args: {
-    profileId: v.id("profiles"),
-    personaSummary: v.string(),
-    personaCategory: v.string(),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.profileId, {
-      personaSummary: args.personaSummary,
-      personaCategory: args.personaCategory,
-    });
-    return null;
-  },
-});
-
-// Enqueue persona generation action from safe runtime
+// Enqueue persona generation action for a new user
 export const enqueuePersonaGeneration = internalMutation({
   args: {
     profileId: v.id("profiles"),
@@ -143,7 +149,6 @@ export const enqueuePersonaGeneration = internalMutation({
       internal.profile.agent.generatePersonaForProfile,
       {
         profileId: args.profileId,
-        context: args.context,
       },
     );
     return null;
@@ -159,7 +164,7 @@ export const orchestrateOnboarding = internalMutation({
   handler: async (ctx, args) => {
     const numAgents = args.numAgents ?? 2;
 
-    // 1) Create bare agent profiles, then schedule the persona generation for each
+    // Create bare agent profiles, then schedule the persona generation for each
     const agentProfileIds: Array<Id<"profiles">> = [];
     for (let i = 0; i < numAgents; i++) {
       const agentProfileId = await ctx.db.insert("profiles", {
@@ -176,7 +181,7 @@ export const orchestrateOnboarding = internalMutation({
       );
     }
 
-    // 2) Seed initial emails from each agent to the user
+    // Seed initial emails from each agent to the user
     for (const agentId of agentProfileIds) {
       await ctx.runMutation(internal.email.emails.writeDirect, {
         senderProfileId: agentId,

@@ -14,7 +14,7 @@ export default async function Listing() {
   }
 
   const messages = await preloadQuery(
-    api.email.emails.listMailboxEntries,
+    api.email.mailbox.listMailboxEntries,
     {
       folder: "inbox",
     },

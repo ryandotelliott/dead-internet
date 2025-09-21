@@ -7,7 +7,7 @@ import { api } from "@/convex/_generated/api";
 import { useEmailStore } from "@/features/email/state/store";
 
 type Props = {
-  preloadedMessages: Preloaded<typeof api.email.emails.listMailboxEntries>;
+  preloadedMessages: Preloaded<typeof api.email.mailbox.listMailboxEntries>;
 };
 
 export default function ListingRows({ preloadedMessages }: Props) {

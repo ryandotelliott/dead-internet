@@ -3,7 +3,7 @@ import { v, Infer } from "convex/values";
 import { DataModel, Doc, Id } from "@/convex/_generated/dataModel";
 import { authComponent } from "@/convex/auth";
 import { GenericMutationCtx } from "convex/server";
-import { internal } from "@/convex/_generated/api";
+import { api, internal } from "@/convex/_generated/api";
 
 export const MailboxFolderV = v.union(
   v.literal("inbox"),
@@ -17,7 +17,6 @@ export const MailboxEntryV = v.object({
   senderProfileId: v.id("profiles"),
   ownerProfileId: v.id("profiles"),
   emailId: v.id("emails"),
-  role: v.union(v.literal("to"), v.literal("cc")),
   folder: MailboxFolderV,
   read: v.boolean(),
   subject: v.string(),
@@ -56,7 +55,6 @@ async function writeEmailAndEntries(
     senderProfileId: params.senderProfileId,
     ownerProfileId: params.senderProfileId,
     emailId,
-    role: "to",
     folder: "sent",
     read: true,
     subject: params.subject,
@@ -67,7 +65,6 @@ async function writeEmailAndEntries(
       senderProfileId: params.senderProfileId,
       ownerProfileId: recipientId,
       emailId,
-      role: "to",
       folder: "inbox",
       read: false,
       subject: params.subject,
@@ -84,8 +81,8 @@ export const sendEmail = mutation({
     body: v.string(),
     threadId: v.optional(v.string()),
   }),
-  returns: v.object({ emailId: v.id("emails") }),
-  async handler(ctx, args): Promise<{ emailId: Id<"emails"> }> {
+  returns: v.null(),
+  async handler(ctx, args): Promise<null> {
     const user = await authComponent.getAuthUser(ctx);
 
     if (!args.to.length) {
@@ -101,38 +98,19 @@ export const sendEmail = mutation({
       throw new Error("Sender profile not found");
     }
 
-    const toProfileIds: Array<Id<"profiles">> = [];
-    for (const recipientEmail of args.to) {
-      const existingRecipient: Doc<"profiles"> | null = await ctx.db
-        .query("profiles")
-        .withIndex("byEmail", (q) => q.eq("email", recipientEmail))
-        .unique();
-
-      // TODO: Create a new profile if not found
-      if (!existingRecipient) {
-        console.warn("Recipient profile not found", recipientEmail);
-        continue;
-      }
-
-      toProfileIds.push(existingRecipient._id);
-    }
-
-    const emailId = await writeEmailAndEntries(ctx, {
-      senderProfileId: senderProfile._id,
-      toProfileIds,
-      subject: args.subject,
-      body: args.body,
-      threadId: args.threadId,
-    });
-
-    // Trigger agent replies asynchronously
     await ctx.scheduler.runAfter(
       0,
-      internal.email.orchestrator.generateAgentReplies,
-      { emailId },
+      internal.email.orchestrator.ensureRecipientsExist,
+      {
+        senderProfileId: senderProfile._id,
+        recipients: args.to,
+        subject: args.subject,
+        body: args.body,
+        threadId: args.threadId,
+      },
     );
 
-    return { emailId };
+    return null;
   },
 });
 
@@ -159,14 +137,11 @@ export const markMailboxEntryRead = mutation({
   args: { mailboxEntryId: v.id("mailboxEntries"), read: v.boolean() },
   returns: v.null(),
   async handler(ctx, args): Promise<null> {
-    const user = await authComponent.getAuthUser(ctx);
+    await authComponent.getAuthUser(ctx);
 
-    const myProfile: Doc<"profiles"> | null = await ctx.db
-      .query("profiles")
-      .withIndex("byUser", (q) => q.eq("userId", user._id))
-      .unique();
+    const profile = await ctx.runQuery(api.profile.profiles.getCurrent);
 
-    if (!myProfile) {
+    if (!profile) {
       throw new Error("Profile not found for user");
     }
 
@@ -174,7 +149,7 @@ export const markMailboxEntryRead = mutation({
     if (!entry) {
       throw new Error("Mailbox entry not found");
     }
-    if (entry.ownerProfileId !== myProfile._id) {
+    if (entry.ownerProfileId !== profile._id) {
       throw new Error("Cannot modify an entry you don't own");
     }
 

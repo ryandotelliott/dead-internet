@@ -37,10 +37,7 @@ export const getEmailDetails = internalQuery({
 
     const recipientIds = new Set<Id<"profiles">>();
     for (const entry of entries) {
-      if (
-        entry.ownerProfileId !== email.senderProfileId &&
-        entry.role === "to"
-      ) {
+      if (entry.ownerProfileId !== email.senderProfileId) {
         recipientIds.add(entry.ownerProfileId);
       }
     }

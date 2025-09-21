@@ -29,7 +29,6 @@ export default defineSchema({
     senderProfileId: v.id("profiles"),
     ownerProfileId: v.id("profiles"), // whose mailbox this appears in
     emailId: v.id("emails"),
-    role: v.union(v.literal("to"), v.literal("cc")),
     folder: v.union(v.literal("inbox"), v.literal("sent"), v.literal("trash")),
     read: v.boolean(),
     subject: v.string(),

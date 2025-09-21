@@ -9,7 +9,7 @@ import dedent from "ts-dedent";
 
 const emailAgent = new Agent(components.agent, {
   name: "emailAgent",
-  languageModel: openai.chat("gpt-5-mini"),
+  languageModel: openai.responses("gpt-5-mini"),
 });
 
 export const ensureThread = internalAction({
@@ -40,17 +40,13 @@ export const ensureThread = internalAction({
 const EmailSchema = z.object({
   subject: z
     .string()
-    .min(1)
-    .max(120)
     .describe(
-      "Concise, plausible corporate subject (no quotes, no brackets, no emojis).",
+      "Concise, plausible corporate subject (no quotes, no brackets, no emojis). Up to 120 characters.",
     ),
   body: z
     .string()
-    .min(1)
-    .max(4000)
     .describe(
-      "Plain-text email in an uncanny corporate tone. No markdown. One subtle anomaly allowed (e.g., obsolete jargon or a harmless [REDACTED]).",
+      "Plain-text email in an uncanny corporate tone. No markdown. One subtle anomaly allowed (e.g., obsolete jargon or [REDACTED]). Up to 3000 characters.",
     ),
 });
 
@@ -88,7 +84,7 @@ export const create = internalAction({
       await thread.generateObject({
         schema: EmailSchema,
         system:
-          "You simulate an aging enterprise mail client within a dead-internet corporate network. Draft emails that are plausible and precise with a faint bureaucratic eeriness.",
+          "You simulate an aging enterprise mail client within a dead-internet corporate network. Draft emails with a faint bureaucratic eeriness.",
         prompt: [
           {
             role: "system",
@@ -101,14 +97,11 @@ export const create = internalAction({
               Recipients (emails only):
               ${args.recipients.map((r) => `- ${r}`).join("\n")}
               Constraints:
-              - Keep it brief and task-oriented.
-              - Corporate tone with softened euphemisms; avoid warmth and jokes.
-              - Subtle strangeness permitted, but remain coherent and useful.
-              - No markdown, no bullets, no meta-references.
-              - Include a simple sign-off with the sender's name.`,
+              - No markdown, no bullets, no emojis.`,
             ),
           },
         ],
+        maxOutputTokens: 3000,
       });
 
     const { subject, body } = result.object;
@@ -122,7 +115,7 @@ export const reply = internalAction({
     threadId: v.string(),
     emailThreadId: v.string(),
   },
-  returns: v.object({ subject: v.string(), body: v.string() }),
+  returns: v.object({ body: v.string() }),
   handler: async (ctx, args) => {
     if (!args.threadId) {
       throw new Error("Thread ID is required");
@@ -156,35 +149,34 @@ export const reply = internalAction({
       },
     );
 
-    const result: { object: { subject: string; body: string } } =
-      await thread.generateObject({
-        schema: EmailSchema.omit({ subject: true }),
-        system:
-          "You simulate an aging enterprise mail client within a dead-internet corporate network. Replies should be concise, procedural, and faintly uncanny.",
-        prompt: [
-          {
-            role: "system",
-            content:
-              "Draft a short reply to the latest message in this thread. Maintain coherence and allow one subtle anomaly at most.",
-          },
-          {
-            role: "system",
-            content: `Sender for sign-off: ${sender.name}`,
-          },
-          {
-            role: "system",
-            content: `Subject: ${threadContext.subject || "(no subject)"}`,
-          },
-          {
-            role: "user",
-            content:
-              "Conversation context (oldest to newest):\n" +
-              contextLines.join("\n"),
-          },
-        ],
-      });
+    const result: { object: { body: string } } = await thread.generateObject({
+      schema: EmailSchema.omit({ subject: true }),
+      system:
+        "You simulate an aging enterprise mail client within a dead-internet corporate network. Replies should be concise, procedural, and faintly uncanny.",
+      prompt: [
+        {
+          role: "system",
+          content:
+            "Draft a short reply to the latest message in this thread. Maintain coherence and allow one subtle anomaly at most.",
+        },
+        {
+          role: "system",
+          content: `Sender for sign-off: ${sender.name}`,
+        },
+        {
+          role: "system",
+          content: `Subject: ${threadContext.subject || "(no subject)"}`,
+        },
+        {
+          role: "user",
+          content:
+            "Conversation context (oldest to newest):\n" +
+            contextLines.join("\n"),
+        },
+      ],
+    });
 
-    const { subject, body } = result.object;
-    return { subject, body };
+    const { body } = result.object;
+    return { body };
   },
 });
