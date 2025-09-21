@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Input } from "@/shared/components/ui/input";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Button } from "@/shared/components/ui/button";
@@ -10,20 +10,39 @@ import { PillInput } from "@/shared/components/ui/pill-input";
 import { useEmailStore } from "@/features/email/state/store";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { useShallow } from "zustand/react/shallow";
 
 type Props = {
   initialRecipients: string[];
 };
 
 export default function Composer({ initialRecipients }: Props) {
-  const { isComposerOpen, setIsComposerOpen, resetComposer } = useEmailStore();
+  const { isComposerOpen, recipients, subject, body } = useEmailStore(
+    useShallow((s) => ({
+      isComposerOpen: s.isComposerOpen,
+      recipients: s.recipients,
+      subject: s.subject,
+      body: s.body,
+    })),
+  );
+
+  const { resetComposer, setRecipients, setSubject, setBody } = useEmailStore(
+    useShallow((s) => ({
+      resetComposer: s.resetComposer,
+      setRecipients: s.setRecipients,
+      setSubject: s.setSubject,
+      setBody: s.setBody,
+    })),
+  );
   const sendEmail = useMutation(api.email.emails.sendEmail);
 
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
-  const [recipientEmails, setRecipientEmails] = useState<string[]>(
-    () => initialRecipients ?? [],
-  );
+  useEffect(() => {
+    if (isComposerOpen) {
+      if (initialRecipients && initialRecipients.length > 0) {
+        setRecipients(initialRecipients);
+      }
+    }
+  }, [isComposerOpen, initialRecipients, setRecipients]);
 
   const emailValidator = useMemo(() => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -39,7 +58,7 @@ export default function Composer({ initialRecipients }: Props) {
         <Button
           size="icon"
           variant="ghost"
-          onClick={() => setIsComposerOpen(false)}
+          onClick={() => resetComposer()}
           aria-label="Close composer"
         >
           <X className="size-4" />
@@ -54,8 +73,8 @@ export default function Composer({ initialRecipients }: Props) {
           <div className="flex flex-row flex-wrap gap-1.5">
             <PillInput
               placeholder="Recipients"
-              value={recipientEmails}
-              onValueChange={setRecipientEmails}
+              value={recipients}
+              onValueChange={setRecipients}
               validator={(v) => emailValidator(v)}
             />
           </div>
@@ -93,19 +112,18 @@ export default function Composer({ initialRecipients }: Props) {
         </div>
 
         <div className="flex flex-row justify-end gap-2">
-          <Button variant="outline" onClick={() => setIsComposerOpen(false)}>
+          <Button variant="outline" onClick={() => resetComposer()}>
             Cancel
           </Button>
           <Button
             onClick={async () => {
-              if (recipientEmails.length === 0) return;
+              if (recipients.length === 0) return;
               await sendEmail({
-                to: recipientEmails,
+                to: recipients,
                 subject,
                 body,
               });
               resetComposer();
-              setIsComposerOpen(false);
             }}
           >
             Send

@@ -219,6 +219,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       splitOnPaste = true,
       onKeyDown,
       onPaste,
+      onBlur,
       ...props
     },
     ref,
@@ -288,15 +289,32 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       [addPills, disabled, onPaste, splitOnPaste],
     );
 
+    const handleBlur = React.useCallback<
+      React.FocusEventHandler<HTMLInputElement>
+    >(
+      (e) => {
+        if (!disabled) {
+          const trimmed = inputValue.trim();
+          if (trimmed) {
+            addPill(trimmed);
+            setInputValue("");
+          }
+        }
+        onBlur?.(e);
+      },
+      [addPill, disabled, inputValue, onBlur, setInputValue],
+    );
+
     return (
       <input
         ref={ref}
         data-pill-input
-        placeholder={placeholder}
+        placeholder={pills.length === 0 ? placeholder : undefined}
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
+        onBlur={handleBlur}
         disabled={disabled}
         className={cn(
           "placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground bg-transparent px-1 py-1 text-base outline-none md:text-sm",
