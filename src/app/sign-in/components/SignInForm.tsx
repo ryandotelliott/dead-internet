@@ -1,18 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/features/auth/lib/auth-client";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 
-export default function SignInForm() {
+type Props = {
+  onToggle?: () => void;
+  toggleLabel?: string;
+};
+
+export default function SignInForm({ onToggle, toggleLabel }: Props) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const emailRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    emailRef.current?.focus();
+  }, []);
 
   return (
     <form
@@ -44,6 +53,7 @@ export default function SignInForm() {
         <Input
           id="email"
           type="email"
+          ref={emailRef}
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -68,6 +78,17 @@ export default function SignInForm() {
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Working..." : "Sign in"}
         </Button>
+        {onToggle && (
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            onClick={onToggle}
+            className="px-0"
+          >
+            {toggleLabel ?? "Create an account"}
+          </Button>
+        )}
       </div>
     </form>
   );

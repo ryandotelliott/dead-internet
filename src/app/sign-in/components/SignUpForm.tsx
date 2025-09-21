@@ -1,19 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/features/auth/lib/auth-client";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 
-export default function SignUpForm() {
+type Props = {
+  onToggle?: () => void;
+  toggleLabel?: string;
+};
+
+export default function SignUpForm({ onToggle, toggleLabel }: Props) {
   const router = useRouter();
-  const [fullName, setFullName] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const nameRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    nameRef.current?.focus();
+  }, []);
 
   return (
     <form
@@ -26,7 +35,7 @@ export default function SignUpForm() {
           const { error } = await authClient.signUp.email({
             email,
             password,
-            name: fullName || email.split("@")[0],
+            name: name || email.split("@")[0],
           });
           if (error) {
             throw Error(error.message ?? "Failed to sign up");
@@ -42,14 +51,14 @@ export default function SignUpForm() {
       }}
     >
       <div className="space-y-2">
-        <Label htmlFor="full-name">Full Name</Label>
+        <Label htmlFor="name">Name</Label>
         <Input
-          id="full-name"
+          id="name"
           type="text"
+          ref={nameRef}
           autoComplete="name"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          required
+          value={name}
+          onChange={(e) => setName(e.target.value)}
         />
       </div>
       <div className="space-y-2">
@@ -81,6 +90,17 @@ export default function SignUpForm() {
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Working..." : "Sign up"}
         </Button>
+        {onToggle && (
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            onClick={onToggle}
+            className="px-0"
+          >
+            {toggleLabel ?? "Sign in"}
+          </Button>
+        )}
       </div>
     </form>
   );
