@@ -83,15 +83,7 @@ export const getThreadContext = internalQuery({
   returns: v.object({
     threadId: v.string(),
     subject: v.string(),
-    messages: v.array(
-      v.object({
-        authorProfileId: v.id("profiles"),
-        authorName: v.string(),
-        authorEmail: v.string(),
-        body: v.string(),
-        timestamp: v.number(),
-      }),
-    ),
+    messages: v.array(ThreadContextMessageV),
   }),
   async handler(ctx, args) {
     const emailsInThread = await ctx.db

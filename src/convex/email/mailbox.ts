@@ -112,3 +112,13 @@ export const markEntryRead = mutation({
     return null;
   },
 });
+
+export const deleteEntry = mutation({
+  args: { mailboxEntryId: v.id("mailboxEntries") },
+  returns: v.null(),
+  async handler(ctx, args) {
+    await authComponent.getAuthUser(ctx);
+    await ctx.db.delete(args.mailboxEntryId);
+    return null;
+  },
+});

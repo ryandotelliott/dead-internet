@@ -12,6 +12,8 @@ interface EmailViewerSlice {
     id: Id<"mailboxEntries">,
     patch: Partial<MailboxEntry>,
   ) => void;
+  createMailboxEntry: (entry: MailboxEntry) => void;
+  deleteMailboxEntry: (id: Id<"mailboxEntries">) => void;
 }
 
 const createEmailViewerSlice: StateCreator<
@@ -33,6 +35,16 @@ const createEmailViewerSlice: StateCreator<
       mailboxEntries: state.mailboxEntries.map((m) =>
         m._id === id ? { ...m, ...patch } : m,
       ),
+    }));
+  },
+  createMailboxEntry: (entry: MailboxEntry) => {
+    set((state) => ({
+      mailboxEntries: [...state.mailboxEntries, entry],
+    }));
+  },
+  deleteMailboxEntry: (id) => {
+    set((state) => ({
+      mailboxEntries: state.mailboxEntries.filter((m) => m._id !== id),
     }));
   },
 });

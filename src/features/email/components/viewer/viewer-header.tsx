@@ -1,5 +1,5 @@
 import { Button } from "@/shared/components/ui/button";
-import { Reply, Trash, Trash2 } from "lucide-react";
+import { Reply, Trash2 } from "lucide-react";
 import React from "react";
 
 type Props = {
@@ -7,6 +7,8 @@ type Props = {
   fromName: string;
   fromEmail: string;
   recipients: Array<{ name: string; email: string }>; // To
+  onReply: () => void;
+  onDelete: () => void;
 };
 
 export default function ViewerHeader({
@@ -14,6 +16,8 @@ export default function ViewerHeader({
   fromName,
   fromEmail,
   recipients,
+  onReply,
+  onDelete,
 }: Props) {
   return (
     <div className="flex flex-col border-b-1">
@@ -21,11 +25,11 @@ export default function ViewerHeader({
         <p className="text-sm font-medium">{subject}</p>
 
         <div className="flex flex-row gap-2">
-          <Button size="sm" variant="outline">
+          <Button size="sm" variant="outline" onClick={onReply}>
             <Reply className="size-4" />
             Reply
           </Button>
-          <Button size="icon-sm" variant="destructive">
+          <Button size="icon-sm" variant="destructive" onClick={onDelete}>
             <Trash2 className="size-4" />
           </Button>
         </div>
