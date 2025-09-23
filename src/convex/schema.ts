@@ -30,7 +30,7 @@ export default defineSchema({
     ownerProfileId: v.id("profiles"), // whose mailbox this appears in
     emailId: v.id("emails"),
     folder: v.union(v.literal("inbox"), v.literal("sent"), v.literal("trash")),
-    read: v.boolean(),
+    isRead: v.boolean(),
     subject: v.string(),
   })
     .index("byOwner", ["ownerProfileId"])

@@ -1,10 +1,11 @@
-import { query } from "@/convex/_generated/server";
+import { mutation, query } from "@/convex/_generated/server";
 import { v } from "convex/values";
 import { Doc } from "@/convex/_generated/dataModel";
 import { authComponent } from "@/convex/auth";
 import { MailboxEntry, MailboxEntryV, MailboxFolderV } from "./emails";
+import { api } from "../_generated/api";
 
-export const listMailboxEntries = query({
+export const listEntries = query({
   args: { folder: MailboxFolderV },
   returns: v.array(MailboxEntryV),
   async handler(ctx, args) {
@@ -84,5 +85,30 @@ export const listMailboxEntries = query({
       });
     }
     return out;
+  },
+});
+
+export const markEntryRead = mutation({
+  args: { mailboxEntryId: v.id("mailboxEntries"), isRead: v.boolean() },
+  returns: v.null(),
+  async handler(ctx, args): Promise<null> {
+    await authComponent.getAuthUser(ctx);
+
+    const profile = await ctx.runQuery(api.profile.profiles.getCurrent);
+
+    if (!profile) {
+      throw new Error("Profile not found for user");
+    }
+
+    const entry = await ctx.db.get(args.mailboxEntryId);
+    if (!entry) {
+      throw new Error("Mailbox entry not found");
+    }
+    if (entry.ownerProfileId !== profile._id) {
+      throw new Error("Cannot modify an entry you don't own");
+    }
+
+    await ctx.db.patch(args.mailboxEntryId, { isRead: args.isRead });
+    return null;
   },
 });

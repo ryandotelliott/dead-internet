@@ -1,9 +1,9 @@
-import { internalMutation, mutation, query } from "@/convex/_generated/server";
+import { internalMutation, mutation } from "@/convex/_generated/server";
 import { v, Infer } from "convex/values";
 import { DataModel, Doc, Id } from "@/convex/_generated/dataModel";
 import { authComponent } from "@/convex/auth";
 import { GenericMutationCtx } from "convex/server";
-import { api, internal } from "@/convex/_generated/api";
+import { internal } from "@/convex/_generated/api";
 
 export const MailboxFolderV = v.union(
   v.literal("inbox"),
@@ -18,7 +18,7 @@ export const MailboxEntryV = v.object({
   ownerProfileId: v.id("profiles"),
   emailId: v.id("emails"),
   folder: MailboxFolderV,
-  read: v.boolean(),
+  isRead: v.boolean(),
   subject: v.string(),
 
   // Sender derived fields
@@ -62,7 +62,7 @@ async function writeEmailAndEntries(
     ownerProfileId: params.senderProfileId,
     emailId,
     folder: "sent",
-    read: true,
+    isRead: true,
     subject: params.subject,
   });
 
@@ -72,7 +72,7 @@ async function writeEmailAndEntries(
       ownerProfileId: recipientId,
       emailId,
       folder: "inbox",
-      read: false,
+      isRead: false,
       subject: params.subject,
     });
   }
@@ -143,30 +143,5 @@ export const writeDirect = internalMutation({
     });
 
     return { emailId };
-  },
-});
-
-export const markMailboxEntryRead = mutation({
-  args: { mailboxEntryId: v.id("mailboxEntries"), read: v.boolean() },
-  returns: v.null(),
-  async handler(ctx, args): Promise<null> {
-    await authComponent.getAuthUser(ctx);
-
-    const profile = await ctx.runQuery(api.profile.profiles.getCurrent);
-
-    if (!profile) {
-      throw new Error("Profile not found for user");
-    }
-
-    const entry = await ctx.db.get(args.mailboxEntryId);
-    if (!entry) {
-      throw new Error("Mailbox entry not found");
-    }
-    if (entry.ownerProfileId !== profile._id) {
-      throw new Error("Cannot modify an entry you don't own");
-    }
-
-    await ctx.db.patch(args.mailboxEntryId, { read: args.read });
-    return null;
   },
 });

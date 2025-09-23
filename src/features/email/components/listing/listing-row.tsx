@@ -12,12 +12,22 @@ type Props = {
   sender: string;
   subject: string;
   dateEpoch: number;
+  initialIsRead: boolean;
 };
 
-export default function ListingRow({ id, sender, subject, dateEpoch }: Props) {
-  const { setSelectedMessageId, updateMailboxEntry, mailboxEntries } =
-    useEmailStore();
-  const markRead = useMutation(api.email.emails.markMailboxEntryRead);
+export default function ListingRow({
+  id,
+  sender,
+  subject,
+  dateEpoch,
+  initialIsRead,
+}: Props) {
+  const storedIsRead = useEmailStore(
+    (state) => state.mailboxEntries.find((entry) => entry._id === id)?.isRead,
+  );
+  const isRead = storedIsRead ?? initialIsRead;
+  const { setSelectedMessageId, updateMailboxEntry } = useEmailStore();
+  const markAsRead = useMutation(api.email.mailbox.markEntryRead);
 
   const dateStr = useMemo(() => {
     return new Date(dateEpoch).toLocaleDateString("en-US", {
@@ -31,11 +41,11 @@ export default function ListingRow({ id, sender, subject, dateEpoch }: Props) {
       onClick={() => {
         setSelectedMessageId(id);
         // Optimistically mark as read
-        const current = mailboxEntries.find((m) => m._id === id);
-        if (current && !current.read) {
-          updateMailboxEntry(id, { read: true });
-          markRead({ mailboxEntryId: id, read: true }).catch(() => {
-            updateMailboxEntry(id, { read: false });
+
+        if (!isRead) {
+          updateMailboxEntry(id, { isRead: true });
+          markAsRead({ mailboxEntryId: id, isRead: true }).catch(() => {
+            updateMailboxEntry(id, { isRead: false });
           });
         }
       }}
@@ -47,8 +57,7 @@ export default function ListingRow({ id, sender, subject, dateEpoch }: Props) {
       </div>
       <p
         className={cn(`text-sm`, {
-          "text-muted-foreground": mailboxEntries.find((m) => m._id === id)
-            ?.read,
+          "text-muted-foreground": isRead,
         })}
       >
         {subject}

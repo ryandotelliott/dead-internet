@@ -7,7 +7,7 @@ import { api } from "@/convex/_generated/api";
 import { useEmailStore } from "@/features/email/state/store";
 
 type Props = {
-  preloadedMessages: Preloaded<typeof api.email.mailbox.listMailboxEntries>;
+  preloadedMessages: Preloaded<typeof api.email.mailbox.listEntries>;
 };
 
 export default function ListingRows({ preloadedMessages }: Props) {
@@ -16,7 +16,7 @@ export default function ListingRows({ preloadedMessages }: Props) {
 
   useEffect(() => {
     setMailboxEntries(messages ?? []);
-  }, [messages]);
+  }, [messages, setMailboxEntries]);
 
   return (
     <div>
@@ -27,6 +27,7 @@ export default function ListingRows({ preloadedMessages }: Props) {
           sender={message.senderName}
           subject={message.subject}
           dateEpoch={message._creationTime}
+          initialIsRead={message.isRead}
         />
       ))}
     </div>
