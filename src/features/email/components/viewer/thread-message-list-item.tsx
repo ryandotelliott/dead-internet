@@ -10,12 +10,14 @@ interface ThreadMessageListItemProps {
   message: ThreadMessage;
   isExpanded: boolean;
   onToggle(key: string): void;
+  ref?: React.RefObject<HTMLDivElement | null>;
 }
 
 export function ThreadMessageListItem({
   message,
   isExpanded,
   onToggle,
+  ref,
 }: ThreadMessageListItemProps) {
   const recipientSummary = React.useMemo(
     () =>
@@ -35,7 +37,7 @@ export function ThreadMessageListItem({
   );
 
   return (
-    <div className="border-b-1 last:border-b-0">
+    <div className="border-b-1 last:border-b-0" ref={ref}>
       <Button
         type="button"
         variant="default"

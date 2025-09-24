@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useLayoutEffect } from "react";
 
 import {
   ThreadMessageListItem,
@@ -9,16 +9,14 @@ import {
 
 interface ThreadMessageListProps {
   messages: ThreadMessage[];
-  threadId: string;
 }
 
-export function ThreadMessageList({
-  messages,
-  threadId,
-}: ThreadMessageListProps) {
+export function ThreadMessageList({ messages }: ThreadMessageListProps) {
   const [expandedKeys, setExpandedKeys] = React.useState<string[]>([]);
   const hasMessages = messages.length > 0;
   const lastMessageKey = hasMessages ? messages[messages.length - 1]?.key : "";
+
+  const lastMessageRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     if (!hasMessages) {
@@ -33,7 +31,15 @@ export function ThreadMessageList({
           : [lastMessageKey],
       );
     }
-  }, [threadId, hasMessages, lastMessageKey]);
+  }, [hasMessages, lastMessageKey]);
+
+  useLayoutEffect(() => {
+    if (!hasMessages) return;
+
+    if (lastMessageRef.current) {
+      lastMessageRef.current.scrollIntoView({ block: "nearest" });
+    }
+  }, [hasMessages, lastMessageKey]);
 
   const handleToggle = React.useCallback((key: string) => {
     setExpandedKeys((prev) =>
@@ -51,6 +57,7 @@ export function ThreadMessageList({
           message={message}
           isExpanded={expandedKeys.includes(message.key)}
           onToggle={handleToggle}
+          ref={lastMessageKey === message.key ? lastMessageRef : undefined}
         />
       ))}
     </div>

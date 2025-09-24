@@ -114,10 +114,7 @@ export default function Viewer() {
         }}
       />
 
-      <ThreadMessageList
-        messages={messages}
-        threadId={selectedMessage.threadId ?? null}
-      />
+      <ThreadMessageList messages={messages} />
     </div>
   );
 }
