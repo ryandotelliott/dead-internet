@@ -32,6 +32,7 @@ export default defineSchema({
     folder: v.union(v.literal("inbox"), v.literal("sent"), v.literal("trash")),
     isRead: v.boolean(),
     subject: v.string(),
+    threadId: v.string(),
   })
     .index("byOwner", ["ownerProfileId"])
     .index("byOwnerFolder", ["ownerProfileId", "folder"])

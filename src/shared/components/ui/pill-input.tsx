@@ -19,6 +19,8 @@ type PillInputContextValue = {
   clearPills: () => void;
   disabled?: boolean;
   maxPills?: number;
+  separatorKeys: Array<string>;
+  splitOnPaste: boolean;
 };
 
 const PillInputContext = React.createContext<PillInputContextValue | null>(
@@ -71,7 +73,10 @@ const Root = React.forwardRef<HTMLDivElement, RootProps>(
     const [uncontrolledPills, setUncontrolledPills] = React.useState<
       Array<string>
     >(defaultValue ?? []);
-    const pills = (isControlled ? value : uncontrolledPills) ?? [];
+    const pills = React.useMemo(
+      () => (isControlled ? (value ?? []) : uncontrolledPills),
+      [isControlled, value, uncontrolledPills],
+    );
     const setPills = React.useCallback(
       (next: Array<string>) => {
         if (disabled) return;
@@ -165,6 +170,8 @@ const Root = React.forwardRef<HTMLDivElement, RootProps>(
         clearPills,
         disabled,
         maxPills,
+        separatorKeys,
+        splitOnPaste,
       }),
       [
         pills,
@@ -176,6 +183,8 @@ const Root = React.forwardRef<HTMLDivElement, RootProps>(
         clearPills,
         disabled,
         maxPills,
+        separatorKeys,
+        splitOnPaste,
       ],
     );
 
@@ -215,8 +224,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     {
       className,
       placeholder,
-      separatorKeys = DEFAULT_SEPARATORS,
-      splitOnPaste = true,
+      separatorKeys,
+      splitOnPaste,
       onKeyDown,
       onPaste,
       onBlur,
@@ -232,14 +241,19 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       pills,
       removePillAt,
       disabled,
+      separatorKeys: ctxSeparatorKeys,
+      splitOnPaste: ctxSplitOnPaste,
     } = usePillInputContext();
+
+    const resolvedSeparators = separatorKeys ?? ctxSeparatorKeys;
+    const resolvedSplitOnPaste = splitOnPaste ?? ctxSplitOnPaste;
 
     const handleKeyDown = React.useCallback<
       React.KeyboardEventHandler<HTMLInputElement>
     >(
       (e) => {
         if (disabled) return;
-        if (separatorKeys.includes(e.key)) {
+        if (resolvedSeparators.includes(e.key)) {
           e.preventDefault();
           if (inputValue.trim()) {
             addPill(inputValue);
@@ -264,7 +278,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         onKeyDown,
         pills.length,
         removePillAt,
-        separatorKeys,
+        resolvedSeparators,
         setInputValue,
       ],
     );
@@ -273,11 +287,11 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       React.ClipboardEventHandler<HTMLInputElement>
     >(
       (e) => {
-        if (!splitOnPaste || disabled) return onPaste?.(e);
+        if (!resolvedSplitOnPaste || disabled) return onPaste?.(e);
         const text = e.clipboardData.getData("text");
         if (!text) return onPaste?.(e);
         const parts = text
-          .split(/[,\n]/g)
+          .split(/[\n,;\s]/g)
           .map((p) => p.trim())
           .filter(Boolean);
         if (parts.length > 1) {
@@ -286,7 +300,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         }
         onPaste?.(e);
       },
-      [addPills, disabled, onPaste, splitOnPaste],
+      [addPills, disabled, onPaste, resolvedSplitOnPaste],
     );
 
     const handleBlur = React.useCallback<

@@ -82,6 +82,7 @@ export const listEntries = query({
         senderEmail: senderProfile.email,
         body: email.body,
         recipients,
+        threadId: email.threadId,
       });
     }
     return out;

@@ -17,24 +17,34 @@ type Props = {
 };
 
 export default function Composer({ initialRecipients }: Props) {
-  const { isComposerOpen, recipients, subject, body } = useEmailStore(
+  const {
+    isComposerOpen,
+    recipients,
+    subject,
+    body,
+    mode,
+    replyThreadId,
+    setRecipients,
+    setSubject,
+    setBody,
+    resetComposer,
+  } = useEmailStore(
     useShallow((s) => ({
       isComposerOpen: s.isComposerOpen,
       recipients: s.recipients,
       subject: s.subject,
       body: s.body,
-    })),
-  );
-
-  const { resetComposer, setRecipients, setSubject, setBody } = useEmailStore(
-    useShallow((s) => ({
-      resetComposer: s.resetComposer,
+      mode: s.mode,
+      replyThreadId: s.replyThreadId,
       setRecipients: s.setRecipients,
       setSubject: s.setSubject,
       setBody: s.setBody,
+      resetComposer: s.reset,
     })),
   );
+
   const sendEmail = useMutation(api.email.emails.sendEmail);
+  const reply = useMutation(api.email.emails.reply);
 
   useEffect(() => {
     if (isComposerOpen) {
@@ -119,11 +129,19 @@ export default function Composer({ initialRecipients }: Props) {
           <Button
             onClick={async () => {
               if (recipients.length === 0) return;
-              await sendEmail({
-                to: recipients,
-                subject,
-                body,
-              });
+              if (mode === "reply" && replyThreadId) {
+                await reply({
+                  threadId: replyThreadId,
+                  subject,
+                  body,
+                });
+              } else {
+                await sendEmail({
+                  to: recipients,
+                  subject,
+                  body,
+                });
+              }
               resetComposer();
             }}
           >
