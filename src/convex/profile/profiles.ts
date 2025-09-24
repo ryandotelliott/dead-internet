@@ -23,8 +23,6 @@ export const getCurrent = query({
   handler: async (ctx) => {
     const user = await authComponent.getAuthUser(ctx);
 
-    if (!user || !user._id) return null;
-
     const profile = await ctx.db
       .query("profiles")
       .withIndex("byUser", (q) => q.eq("userId", user._id))

@@ -1,7 +1,6 @@
 import { internalMutation, mutation } from "@/convex/_generated/server";
 import { v, Infer } from "convex/values";
 import { DataModel, Id } from "@/convex/_generated/dataModel";
-import { authComponent } from "@/convex/auth";
 import { GenericMutationCtx } from "convex/server";
 import { api, internal } from "@/convex/_generated/api";
 
@@ -46,7 +45,6 @@ const NewEmailV = v.object({
   threadId: v.optional(v.string()),
 });
 
-// Shared helper to write the email and mailbox entries
 async function writeEmailAndEntries(
   ctx: GenericMutationCtx<DataModel>,
   params: Infer<typeof NewEmailV>,
@@ -94,12 +92,6 @@ export const sendEmail = mutation({
   }),
   returns: v.null(),
   async handler(ctx, args): Promise<null> {
-    await authComponent.getAuthUser(ctx);
-
-    if (!args.to.length) {
-      throw new Error("Recipients are required");
-    }
-
     const senderProfile = await ctx.runQuery(
       api.profile.profiles.getCurrent,
       {},
@@ -141,8 +133,6 @@ export const reply = mutation({
   }),
   returns: v.null(),
   async handler(ctx, args): Promise<null> {
-    await authComponent.getAuthUser(ctx);
-
     const senderProfile = await ctx.runQuery(
       api.profile.profiles.getCurrent,
       {},
