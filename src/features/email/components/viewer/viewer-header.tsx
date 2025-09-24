@@ -36,15 +36,17 @@ export default function ViewerHeader({
       </div>
 
       <div className="flex flex-col gap-2 text-xs text-muted-foreground px-2 pb-2 pt-2">
-        <span>
-          From: <span className="text-foreground">{fromName}</span>{" "}
+        <span className="select-none">
+          From: <span className="text-foreground select-text">{fromName}</span>{" "}
           {fromEmail ? (
-            <span className="text-muted-foreground">&lt;{fromEmail}&gt;</span>
+            <span className="text-muted-foreground select-text">
+              &lt;{fromEmail}&gt;
+            </span>
           ) : null}
         </span>
-        <span>
+        <span className="select-none">
           To:{" "}
-          <span className="text-foreground">
+          <span className="text-foreground select-text">
             {recipients.map((r) => r.name || r.email).join(", ")}
           </span>
         </span>
