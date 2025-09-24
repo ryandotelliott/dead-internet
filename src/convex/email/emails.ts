@@ -3,7 +3,7 @@ import { v, Infer } from "convex/values";
 import { DataModel, Doc, Id } from "@/convex/_generated/dataModel";
 import { authComponent } from "@/convex/auth";
 import { GenericMutationCtx } from "convex/server";
-import { internal } from "@/convex/_generated/api";
+import { api, internal } from "@/convex/_generated/api";
 
 export const MailboxFolderV = v.union(
   v.literal("inbox"),
@@ -94,16 +94,16 @@ export const sendEmail = mutation({
   }),
   returns: v.null(),
   async handler(ctx, args): Promise<null> {
-    const user = await authComponent.getAuthUser(ctx);
+    await authComponent.getAuthUser(ctx);
 
     if (!args.to.length) {
       throw new Error("Recipients are required");
     }
 
-    const senderProfile: Doc<"profiles"> | null = await ctx.db
-      .query("profiles")
-      .withIndex("byUser", (q) => q.eq("userId", user._id))
-      .unique();
+    const senderProfile = await ctx.runQuery(
+      api.profile.profiles.getCurrent,
+      {},
+    );
 
     if (!senderProfile) {
       throw new Error("Sender profile not found");
@@ -140,12 +140,12 @@ export const reply = mutation({
   }),
   returns: v.null(),
   async handler(ctx, args): Promise<null> {
-    const user = await authComponent.getAuthUser(ctx);
+    await authComponent.getAuthUser(ctx);
 
-    const senderProfile: Doc<"profiles"> | null = await ctx.db
-      .query("profiles")
-      .withIndex("byUser", (q) => q.eq("userId", user._id))
-      .unique();
+    const senderProfile = await ctx.runQuery(
+      api.profile.profiles.getCurrent,
+      {},
+    );
 
     if (!senderProfile) {
       throw new Error("Sender profile not found");

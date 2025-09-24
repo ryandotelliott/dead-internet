@@ -15,10 +15,7 @@ export const listEntries = query({
       throw new Error("Not authenticated");
     }
 
-    const profile: Doc<"profiles"> | null = await ctx.db
-      .query("profiles")
-      .withIndex("byUser", (q) => q.eq("userId", user._id))
-      .unique();
+    const profile = await ctx.runQuery(api.profile.profiles.getCurrent, {});
 
     if (!profile) {
       throw new Error("Profile not found for user");
