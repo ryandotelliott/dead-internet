@@ -10,6 +10,9 @@ import dedent from "ts-dedent";
 const emailAgent = new Agent(components.agent, {
   name: "emailAgent",
   languageModel: openai.responses("gpt-4.1-mini"),
+  contextOptions: {
+    searchOtherThreads: false,
+  },
 });
 
 export const ensureThread = internalAction({
@@ -140,7 +143,7 @@ export const reply = internalAction({
 
     // Load recent conversation context from the canonical email thread
     const threadContext = await ctx.runQuery(
-      internal.email.threads.getThreadContext,
+      internal.email.threads.getThreadContextInternal,
       { emailThreadId: args.emailThreadId, limit: 10 },
     );
 

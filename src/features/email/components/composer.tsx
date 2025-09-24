@@ -17,25 +17,20 @@ type Props = {
 };
 
 export default function Composer({ initialRecipients }: Props) {
-  const {
-    isComposerOpen,
-    recipients,
-    subject,
-    body,
-    mode,
-    replyThreadId,
-    setRecipients,
-    setSubject,
-    setBody,
-    resetComposer,
-  } = useEmailStore(
+  const { isComposerOpen, recipients, subject, body, mode, replyThreadId } =
+    useEmailStore(
+      useShallow((s) => ({
+        isComposerOpen: s.isComposerOpen,
+        recipients: s.recipients,
+        subject: s.subject,
+        body: s.body,
+        mode: s.mode,
+        replyThreadId: s.replyThreadId,
+      })),
+    );
+
+  const { setRecipients, setSubject, setBody, resetComposer } = useEmailStore(
     useShallow((s) => ({
-      isComposerOpen: s.isComposerOpen,
-      recipients: s.recipients,
-      subject: s.subject,
-      body: s.body,
-      mode: s.mode,
-      replyThreadId: s.replyThreadId,
       setRecipients: s.setRecipients,
       setSubject: s.setSubject,
       setBody: s.setBody,
@@ -131,9 +126,10 @@ export default function Composer({ initialRecipients }: Props) {
               if (recipients.length === 0) return;
               if (mode === "reply" && replyThreadId) {
                 await reply({
-                  threadId: replyThreadId,
+                  to: recipients,
                   subject,
                   body,
+                  threadId: replyThreadId,
                 });
               } else {
                 await sendEmail({

@@ -3,9 +3,22 @@
 import React from "react";
 import { useEmailStore } from "@/features/email/state/store";
 import ViewerHeader from "@/features/email/components/viewer/viewer-header";
-import ShadowDom from "@/features/email/components/viewer/shadow-dom";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import {
+  ThreadMessageList,
+  type ThreadMessage,
+} from "@/features/email/components/viewer/thread-message-list";
+
+function extractPreview(html: string, maxLength = 120): string {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+
+  const normalized = doc.body.textContent?.replace(/\s+/g, " ").trim();
+
+  if (!normalized) return "<No content>";
+  if (normalized.length <= maxLength) return normalized;
+  return normalized.slice(0, Math.max(0, maxLength - 1)) + "…";
+}
 
 function EmptyViewer() {
   return (
@@ -16,8 +29,6 @@ function EmptyViewer() {
 }
 
 export default function Viewer() {
-  const profile = useQuery(api.profile.profiles.getCurrent);
-
   const selectedMessage = useEmailStore((state) =>
     state.mailboxEntries.find((item) => item._id === state.selectedMessageId),
   );
@@ -28,7 +39,31 @@ export default function Viewer() {
   );
   const initializeReply = useEmailStore((state) => state.initializeReply);
 
+  const profile = useQuery(api.profile.profiles.getCurrent);
   const deleteEntry = useMutation(api.email.mailbox.deleteEntry);
+  const threadMessages = useQuery(
+    api.email.threads.getThreadContext,
+    selectedMessage?.threadId
+      ? { emailThreadId: selectedMessage.threadId, limit: 10 }
+      : "skip",
+  );
+
+  const messages = React.useMemo<ThreadMessage[]>(() => {
+    if (!threadMessages) return [];
+
+    return threadMessages.messages.map((message, index) => ({
+      key: `${threadMessages.threadId}-${message.timestamp}-${index}`,
+      authorName: message.authorName,
+      authorEmail: message.authorEmail,
+      body: message.body,
+      recipients: message.recipients.map((recipient) => ({
+        name: recipient.name,
+        email: recipient.email,
+      })),
+      timestamp: message.timestamp,
+      preview: extractPreview(message.body),
+    }));
+  }, [threadMessages]);
 
   if (!selectedMessage || !profile) return <EmptyViewer />;
 
@@ -42,9 +77,7 @@ export default function Viewer() {
       recipientEmails.add(selectedMessage.senderEmail);
     }
 
-    if (profile?.email) {
-      recipientEmails.delete(profile.email);
-    }
+    recipientEmails.delete(profile.email);
 
     initializeReply({
       threadId: selectedMessage.threadId,
@@ -57,9 +90,6 @@ export default function Viewer() {
     <div className="flex flex-col h-full w-full">
       <ViewerHeader
         subject={selectedMessage.subject}
-        fromName={selectedMessage.senderName}
-        fromEmail={selectedMessage.senderEmail}
-        recipients={selectedMessage.recipients}
         onReply={handleReply}
         onDelete={() => {
           removeMailboxEntry(selectedMessage._id);
@@ -70,9 +100,10 @@ export default function Viewer() {
         }}
       />
 
-      <div className="flex flex-col h-full w-full p-2">
-        <ShadowDom html={selectedMessage.body} />
-      </div>
+      <ThreadMessageList
+        messages={messages}
+        threadId={selectedMessage.threadId ?? null}
+      />
     </div>
   );
 }

@@ -8,7 +8,7 @@ export const generateAgentReplies = internalAction({
   args: { emailId: v.id("emails") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const details = await ctx.runQuery(internal.email.threads.getEmailDetails, {
+    const details = await ctx.runQuery(api.email.threads.getEmailDetails, {
       emailId: args.emailId,
     });
     if (!details) return null;
@@ -22,7 +22,7 @@ export const generateAgentReplies = internalAction({
       if (!isAgent) continue;
 
       // Ensure mapping to an agent conversation thread
-      const ensured = await ctx.runAction(internal.email.agent.ensureThread, {
+      const thread = await ctx.runAction(internal.email.agent.ensureThread, {
         emailThreadId: email.threadId,
         agentProfileId: recipient._id,
       });
@@ -30,7 +30,7 @@ export const generateAgentReplies = internalAction({
       // Ask the agent to reply in its own conversation thread
       const reply = await ctx.runAction(internal.email.agent.reply, {
         agentProfileId: recipient._id,
-        threadId: ensured.agentThreadId,
+        threadId: thread.agentThreadId,
         emailThreadId: email.threadId,
       });
 

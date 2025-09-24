@@ -52,9 +52,9 @@ export default function ListingRow({
         }
       }}
       className={cn(
-        "flex flex-col gap-1 border-b-1 px-2 py-4 select-none hover:bg-accent cursor-pointer hover:border-transparent transition-colors",
+        "flex flex-col gap-1 border-b-1 px-2 py-4 select-none hover:bg-muted/40 cursor-pointer transition-colors",
         {
-          "bg-accent": isSelected,
+          "bg-muted/30": isSelected,
         },
       )}
     >
