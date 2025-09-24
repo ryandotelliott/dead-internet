@@ -22,7 +22,7 @@ export default async function Listing() {
   );
 
   return (
-    <div className="flex flex-col h-full border-r-1 min-w-80 overflow-y-auto">
+    <div className="flex flex-col h-full border-r-1 min-w-40 w-full overflow-y-auto max-w-80">
       <ListingHeader />
       <ListingRows preloadedMessages={messages ?? []} />
     </div>

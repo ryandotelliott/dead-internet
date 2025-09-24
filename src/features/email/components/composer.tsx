@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { Input } from "@/shared/components/ui/input";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Button } from "@/shared/components/ui/button";
@@ -17,6 +17,8 @@ type Props = {
 };
 
 export default function Composer({ initialRecipients }: Props) {
+  const composerBodyRef = useRef<HTMLTextAreaElement>(null);
+
   const { isComposerOpen, recipients, subject, body, mode, replyThreadId } =
     useEmailStore(
       useShallow((s) => ({
@@ -46,8 +48,12 @@ export default function Composer({ initialRecipients }: Props) {
       if (initialRecipients && initialRecipients.length > 0) {
         setRecipients(initialRecipients);
       }
+
+      if (mode === "reply") {
+        composerBodyRef.current?.focus();
+      }
     }
-  }, [isComposerOpen, initialRecipients, setRecipients]);
+  }, [isComposerOpen, initialRecipients, setRecipients, mode]);
 
   const emailValidator = useMemo(() => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -110,6 +116,7 @@ export default function Composer({ initialRecipients }: Props) {
           </Label>
           <Textarea
             id="composer-body"
+            ref={composerBodyRef}
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="Write your message..."

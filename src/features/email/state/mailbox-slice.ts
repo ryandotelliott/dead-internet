@@ -5,8 +5,8 @@ import { Id } from "@/convex/_generated/dataModel";
 // Mailbox state - handles email list, selection, and CRUD operations
 export interface MailboxSlice {
   // Selection state
-  selectedMessageId: Id<"mailboxEntries"> | null;
-  setSelectedMessageId: (messageId: Id<"mailboxEntries"> | null) => void;
+  selectedThreadId: string | null;
+  setSelectedThreadId: (threadId: string | null) => void;
 
   // Mailbox entries management
   mailboxEntries: MailboxEntry[];
@@ -26,12 +26,20 @@ export const createMailboxSlice: StateCreator<
   MailboxSlice
 > = (set) => ({
   // Selection
-  selectedMessageId: null,
-  setSelectedMessageId: (messageId) => set({ selectedMessageId: messageId }),
+  selectedThreadId: null,
+  setSelectedThreadId: (threadId) => set({ selectedThreadId: threadId }),
 
   // Mailbox entries
   mailboxEntries: [],
-  setMailboxEntries: (entries) => set({ mailboxEntries: entries }),
+  setMailboxEntries: (entries) =>
+    set((state) => ({
+      mailboxEntries: entries,
+      selectedThreadId:
+        state.selectedThreadId &&
+        entries.some((entry) => entry.threadId === state.selectedThreadId)
+          ? state.selectedThreadId
+          : null,
+    })),
 
   updateMailboxEntry: (id, updates) =>
     set((state) => ({
@@ -46,7 +54,17 @@ export const createMailboxSlice: StateCreator<
     })),
 
   removeMailboxEntry: (id) =>
-    set((state) => ({
-      mailboxEntries: state.mailboxEntries.filter((entry) => entry._id !== id),
-    })),
+    set((state) => {
+      const entryToRemove = state.mailboxEntries.find((entry) => entry._id === id);
+      const nextEntries = state.mailboxEntries.filter((entry) => entry._id !== id);
+
+      const shouldClearSelection =
+        entryToRemove?.threadId &&
+        entryToRemove.threadId === state.selectedThreadId;
+
+      return {
+        mailboxEntries: nextEntries,
+        selectedThreadId: shouldClearSelection ? null : state.selectedThreadId,
+      };
+    }),
 });

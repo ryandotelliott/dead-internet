@@ -6,6 +6,7 @@ import { Preloaded, usePreloadedQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useEmailStore } from "@/features/email/state/store";
 import { useShallow } from "zustand/react/shallow";
+import extractPreview from "../../lib/extract-preview";
 
 type Props = {
   preloadedMessages: Preloaded<typeof api.email.mailbox.listEntries>;
@@ -13,16 +14,16 @@ type Props = {
 
 export default function ListingRows({ preloadedMessages }: Props) {
   const messages = usePreloadedQuery(preloadedMessages);
-  const { setMailboxEntries, selectedMessageId } = useEmailStore(
+  const { setMailboxEntries, selectedThreadId } = useEmailStore(
     useShallow((state) => ({
       setMailboxEntries: state.setMailboxEntries,
-      selectedMessageId: state.selectedMessageId,
+      selectedThreadId: state.selectedThreadId,
     })),
   );
 
   useEffect(() => {
-    const items = messages ?? [];
-    setMailboxEntries(items);
+    if (messages === undefined) return;
+    setMailboxEntries(messages);
   }, [messages, setMailboxEntries]);
 
   return (
@@ -31,11 +32,13 @@ export default function ListingRows({ preloadedMessages }: Props) {
         <ListingRow
           key={message._id}
           id={message._id}
+          threadId={message.threadId}
           sender={message.senderName}
           subject={message.subject}
+          preview={extractPreview(message.body)}
           dateEpoch={message._creationTime}
           initialIsRead={message.isRead}
-          isSelected={message._id === selectedMessageId}
+          isSelected={message.threadId === selectedThreadId}
         />
       ))}
     </div>

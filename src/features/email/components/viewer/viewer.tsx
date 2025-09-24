@@ -9,16 +9,8 @@ import {
   ThreadMessageList,
   type ThreadMessage,
 } from "@/features/email/components/viewer/thread-message-list";
-
-function extractPreview(html: string, maxLength = 120): string {
-  const doc = new DOMParser().parseFromString(html, "text/html");
-
-  const normalized = doc.body.textContent?.replace(/\s+/g, " ").trim();
-
-  if (!normalized) return "<No content>";
-  if (normalized.length <= maxLength) return normalized;
-  return normalized.slice(0, Math.max(0, maxLength - 1)) + "…";
-}
+import { useShallow } from "zustand/react/shallow";
+import extractPreview from "@/features/email/lib/extract-preview";
 
 function EmptyViewer() {
   return (
@@ -29,13 +21,24 @@ function EmptyViewer() {
 }
 
 export default function Viewer() {
-  const selectedMessage = useEmailStore((state) =>
-    state.mailboxEntries.find((item) => item._id === state.selectedMessageId),
+  const { mailboxEntries, selectedThreadId } = useEmailStore(
+    useShallow((state) => ({
+      mailboxEntries: state.mailboxEntries,
+      selectedThreadId: state.selectedThreadId,
+    })),
+  );
+  const selectedMessage = React.useMemo(
+    () =>
+      selectedThreadId
+        ? (mailboxEntries.find((item) => item.threadId === selectedThreadId) ??
+          null)
+        : null,
+    [mailboxEntries, selectedThreadId],
   );
   const addMailboxEntry = useEmailStore((state) => state.addMailboxEntry);
   const removeMailboxEntry = useEmailStore((state) => state.removeMailboxEntry);
-  const setSelectedMessageId = useEmailStore(
-    (state) => state.setSelectedMessageId,
+  const setSelectedThreadId = useEmailStore(
+    (state) => state.setSelectedThreadId,
   );
   const initializeReply = useEmailStore((state) => state.initializeReply);
 
@@ -95,7 +98,7 @@ export default function Viewer() {
           removeMailboxEntry(selectedMessage._id);
           deleteEntry({ mailboxEntryId: selectedMessage._id }).catch(() => {
             addMailboxEntry(selectedMessage);
-            setSelectedMessageId(selectedMessage._id);
+            setSelectedThreadId(selectedMessage.threadId);
           });
         }}
       />

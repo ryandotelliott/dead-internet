@@ -9,8 +9,10 @@ import { cn } from "@/shared/lib/ui-utils";
 
 type Props = {
   id: Id<"mailboxEntries">;
+  threadId: string;
   sender: string;
   subject: string;
+  preview: string;
   dateEpoch: number;
   initialIsRead: boolean;
   isSelected: boolean;
@@ -18,8 +20,10 @@ type Props = {
 
 export default function ListingRow({
   id,
+  threadId,
   sender,
   subject,
+  preview,
   dateEpoch,
   initialIsRead,
   isSelected,
@@ -28,7 +32,7 @@ export default function ListingRow({
     (state) => state.mailboxEntries.find((entry) => entry._id === id)?.isRead,
   );
   const isRead = storedIsRead ?? initialIsRead;
-  const { setSelectedMessageId, updateMailboxEntry } = useEmailStore();
+  const { setSelectedThreadId, updateMailboxEntry } = useEmailStore();
   const markAsRead = useMutation(api.email.mailbox.markEntryRead);
 
   const dateStr = useMemo(() => {
@@ -41,8 +45,7 @@ export default function ListingRow({
   return (
     <div
       onClick={() => {
-        setSelectedMessageId(id);
-        // Optimistically mark as read
+        setSelectedThreadId(threadId);
 
         if (!isRead) {
           updateMailboxEntry(id, { isRead: true });
@@ -68,6 +71,9 @@ export default function ListingRow({
         })}
       >
         {subject}
+      </p>
+      <p className="text-xs text-muted-foreground truncate whitespace-nowrap">
+        {preview}
       </p>
     </div>
   );

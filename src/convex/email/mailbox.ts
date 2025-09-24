@@ -23,7 +23,13 @@ export const listEntries = query({
       .take(50);
 
     const out: Array<MailboxEntry> = [];
+    const seenThreads = new Set<string>();
     for (const entry of entries) {
+      if (seenThreads.has(entry.threadId)) {
+        continue;
+      }
+      seenThreads.add(entry.threadId);
+
       const senderProfile: Doc<"profiles"> | null = await ctx.db.get(
         entry.senderProfileId,
       );
