@@ -4,7 +4,7 @@ import React from "react";
 import { useEmailStore } from "@/features/email/state/store";
 import ViewerHeader from "@/features/email/components/viewer/viewer-header";
 import ShadowDom from "@/features/email/components/viewer/shadow-dom";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
 function EmptyViewer() {
@@ -16,6 +16,8 @@ function EmptyViewer() {
 }
 
 export default function Viewer() {
+  const profile = useQuery(api.profile.profiles.getCurrent);
+
   const selectedMessage = useEmailStore((state) =>
     state.mailboxEntries.find((item) => item._id === state.selectedMessageId),
   );
@@ -28,7 +30,7 @@ export default function Viewer() {
 
   const deleteEntry = useMutation(api.email.mailbox.deleteEntry);
 
-  if (!selectedMessage) return <EmptyViewer />;
+  if (!selectedMessage || !profile) return <EmptyViewer />;
 
   const handleReply = () => {
     if (!selectedMessage.threadId) return;
@@ -39,6 +41,11 @@ export default function Viewer() {
     if (selectedMessage.senderEmail) {
       recipientEmails.add(selectedMessage.senderEmail);
     }
+
+    if (profile?.email) {
+      recipientEmails.delete(profile.email);
+    }
+
     initializeReply({
       threadId: selectedMessage.threadId,
       recipients: Array.from(recipientEmails),

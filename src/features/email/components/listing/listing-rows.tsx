@@ -13,22 +13,17 @@ type Props = {
 
 export default function ListingRows({ preloadedMessages }: Props) {
   const messages = usePreloadedQuery(preloadedMessages);
-  const { setMailboxEntries, selectedMessageId, setSelectedMessageId } =
-    useEmailStore(
-      useShallow((state) => ({
-        setMailboxEntries: state.setMailboxEntries,
-        selectedMessageId: state.selectedMessageId,
-        setSelectedMessageId: state.setSelectedMessageId,
-      })),
-    );
+  const { setMailboxEntries, selectedMessageId } = useEmailStore(
+    useShallow((state) => ({
+      setMailboxEntries: state.setMailboxEntries,
+      selectedMessageId: state.selectedMessageId,
+    })),
+  );
 
   useEffect(() => {
     const items = messages ?? [];
     setMailboxEntries(items);
-    if (!selectedMessageId && items[0]?._id) {
-      setSelectedMessageId(items[0]._id);
-    }
-  }, [messages, selectedMessageId, setMailboxEntries, setSelectedMessageId]);
+  }, [messages, setMailboxEntries]);
 
   return (
     <div>
@@ -40,6 +35,7 @@ export default function ListingRows({ preloadedMessages }: Props) {
           subject={message.subject}
           dateEpoch={message._creationTime}
           initialIsRead={message.isRead}
+          isSelected={message._id === selectedMessageId}
         />
       ))}
     </div>

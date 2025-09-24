@@ -13,6 +13,7 @@ type Props = {
   subject: string;
   dateEpoch: number;
   initialIsRead: boolean;
+  isSelected: boolean;
 };
 
 export default function ListingRow({
@@ -21,6 +22,7 @@ export default function ListingRow({
   subject,
   dateEpoch,
   initialIsRead,
+  isSelected,
 }: Props) {
   const storedIsRead = useEmailStore(
     (state) => state.mailboxEntries.find((entry) => entry._id === id)?.isRead,
@@ -49,7 +51,12 @@ export default function ListingRow({
           });
         }
       }}
-      className="flex flex-col gap-1 border-b-1 px-2 py-4 select-none hover:bg-accent cursor-pointer hover:border-transparent transition-colors"
+      className={cn(
+        "flex flex-col gap-1 border-b-1 px-2 py-4 select-none hover:bg-accent cursor-pointer hover:border-transparent transition-colors",
+        {
+          "bg-accent": isSelected,
+        },
+      )}
     >
       <div className="flex flex-row gap-2 justify-between">
         <p className="text-sm font-semibold">{sender}</p>
