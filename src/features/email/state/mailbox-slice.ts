@@ -16,7 +16,7 @@ export interface MailboxSlice {
     updates: Partial<MailboxEntry>,
   ) => void;
   addMailboxEntry: (entry: MailboxEntry) => void;
-  removeMailboxEntry: (id: Id<"mailboxEntries">) => void;
+  removeMailboxEntriesByThread: (threadId: string) => void;
 }
 
 export const createMailboxSlice: StateCreator<
@@ -53,14 +53,18 @@ export const createMailboxSlice: StateCreator<
       mailboxEntries: [...state.mailboxEntries, entry],
     })),
 
-  removeMailboxEntry: (id) =>
+  removeMailboxEntriesByThread: (threadId) =>
     set((state) => {
-      const entryToRemove = state.mailboxEntries.find((entry) => entry._id === id);
-      const nextEntries = state.mailboxEntries.filter((entry) => entry._id !== id);
+      const hasThread = state.mailboxEntries.some(
+        (entry) => entry.threadId === threadId,
+      );
+      const nextEntries = state.mailboxEntries.filter(
+        (entry) => entry.threadId !== threadId,
+      );
 
-      const shouldClearSelection =
-        entryToRemove?.threadId &&
-        entryToRemove.threadId === state.selectedThreadId;
+      const shouldClearSelection = hasThread
+        ? state.selectedThreadId === threadId
+        : false;
 
       return {
         mailboxEntries: nextEntries,

@@ -125,7 +125,16 @@ export const deleteEntry = mutation({
       throw new Error("Cannot delete an entry you don't own");
     }
 
-    await ctx.db.delete(args.mailboxEntryId);
+    const threadEntries = await ctx.db
+      .query("mailboxEntries")
+      .withIndex("byOwnerThread", (q) =>
+        q.eq("ownerProfileId", profile._id).eq("threadId", entry.threadId),
+      )
+      .collect();
+
+    for (const threadEntry of threadEntries) {
+      await ctx.db.delete(threadEntry._id);
+    }
     return null;
   },
 });

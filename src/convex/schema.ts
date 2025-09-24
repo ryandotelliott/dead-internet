@@ -36,6 +36,7 @@ export default defineSchema({
   })
     .index("byOwner", ["ownerProfileId"])
     .index("byOwnerFolder", ["ownerProfileId", "folder"])
+    .index("byOwnerThread", ["ownerProfileId", "threadId"])
     .index("byEmail", ["emailId"]),
 
   // Mapping between user-visible email threads and per-agent conversation threads

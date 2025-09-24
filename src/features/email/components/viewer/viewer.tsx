@@ -35,8 +35,9 @@ export default function Viewer() {
         : null,
     [mailboxEntries, selectedThreadId],
   );
-  const addMailboxEntry = useEmailStore((state) => state.addMailboxEntry);
-  const removeMailboxEntry = useEmailStore((state) => state.removeMailboxEntry);
+  const removeMailboxEntriesByThread = useEmailStore(
+    (state) => state.removeMailboxEntriesByThread,
+  );
   const setSelectedThreadId = useEmailStore(
     (state) => state.setSelectedThreadId,
   );
@@ -95,9 +96,19 @@ export default function Viewer() {
         subject={selectedMessage.subject}
         onReply={handleReply}
         onDelete={() => {
-          removeMailboxEntry(selectedMessage._id);
+          const threadEntriesSnapshot = mailboxEntries.filter(
+            (entry) => entry.threadId === selectedMessage.threadId,
+          );
+          removeMailboxEntriesByThread(selectedMessage.threadId);
           deleteEntry({ mailboxEntryId: selectedMessage._id }).catch(() => {
-            addMailboxEntry(selectedMessage);
+            useEmailStore.setState((state) => ({
+              mailboxEntries: [
+                ...threadEntriesSnapshot,
+                ...state.mailboxEntries.filter(
+                  (entry) => entry.threadId !== selectedMessage.threadId,
+                ),
+              ],
+            }));
             setSelectedThreadId(selectedMessage.threadId);
           });
         }}
