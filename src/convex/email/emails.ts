@@ -1,6 +1,6 @@
 import { internalMutation, mutation } from "@/convex/_generated/server";
 import { v, Infer } from "convex/values";
-import { DataModel, Doc, Id } from "@/convex/_generated/dataModel";
+import { DataModel, Id } from "@/convex/_generated/dataModel";
 import { authComponent } from "@/convex/auth";
 import { GenericMutationCtx } from "convex/server";
 import { api, internal } from "@/convex/_generated/api";
@@ -134,9 +134,10 @@ export const sendEmail = mutation({
 
 export const reply = mutation({
   args: v.object({
-    threadId: v.string(),
+    to: v.array(v.string()),
     subject: v.string(),
     body: v.string(),
+    threadId: v.string(),
   }),
   returns: v.null(),
   async handler(ctx, args): Promise<null> {
@@ -151,37 +152,19 @@ export const reply = mutation({
       throw new Error("Sender profile not found");
     }
 
-    const emailsInThread: Array<Doc<"emails">> = await ctx.db
-      .query("emails")
-      .withIndex("byThread", (q) => q.eq("threadId", args.threadId))
-      .collect();
-
-    if (emailsInThread.length === 0) {
-      throw new Error("Thread not found");
-    }
-
-    const participantIds = new Set<Id<"profiles">>();
-
-    for (const email of emailsInThread) {
-      participantIds.add(email.senderProfileId);
-      const relatedEntries = await ctx.db
-        .query("mailboxEntries")
-        .withIndex("byEmail", (q) => q.eq("emailId", email._id))
-        .collect();
-      for (const entry of relatedEntries) {
-        participantIds.add(entry.ownerProfileId);
+    const toProfileIds = new Set<Id<"profiles">>();
+    for (const recipient of args.to) {
+      const recipientProfile = await ctx.runQuery(
+        api.profile.profiles.getByEmail,
+        { email: recipient },
+      );
+      if (!recipientProfile) {
+        throw new Error("Recipient profile not found");
       }
+      toProfileIds.add(recipientProfile._id);
     }
 
-    if (!participantIds.has(senderProfile._id)) {
-      throw new Error("Cannot reply to a thread you are not part of");
-    }
-
-    participantIds.delete(senderProfile._id);
-
-    const toProfileIds = Array.from(participantIds);
-
-    if (toProfileIds.length === 0) {
+    if (toProfileIds.size === 0) {
       throw new Error("No recipients available for reply");
     }
 
@@ -191,7 +174,7 @@ export const reply = mutation({
 
     const emailId = await writeEmailAndEntries(ctx, {
       senderProfileId: senderProfile._id,
-      toProfileIds,
+      toProfileIds: Array.from(toProfileIds),
       subject,
       body: args.body,
       threadId: args.threadId,
