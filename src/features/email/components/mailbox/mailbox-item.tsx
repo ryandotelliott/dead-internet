@@ -18,7 +18,7 @@ type Props = {
   isSelected: boolean;
 };
 
-export default function ListingRow({
+export default function MailboxItem({
   id,
   threadId,
   sender,

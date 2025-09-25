@@ -4,7 +4,7 @@ import { Button } from "@/shared/components/ui/button";
 import React from "react";
 import { useEmailStore } from "@/features/email/state/store";
 
-export default function ListingHeader() {
+export default function MailboxHeader() {
   const { setIsComposerOpen } = useEmailStore();
 
   return (

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import ListingRow from "@/features/email/components/listing/listing-row";
+import MailboxItem from "@/features/email/components/mailbox/mailbox-item";
 import { Preloaded, usePreloadedQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useEmailStore } from "@/features/email/state/store";
@@ -12,7 +12,7 @@ type Props = {
   preloadedMessages: Preloaded<typeof api.email.mailbox.listEntries>;
 };
 
-export default function ListingRows({ preloadedMessages }: Props) {
+export default function MailboxItems({ preloadedMessages }: Props) {
   const messages = usePreloadedQuery(preloadedMessages);
   const { setMailboxEntries, selectedThreadId } = useEmailStore(
     useShallow((state) => ({
@@ -29,7 +29,7 @@ export default function ListingRows({ preloadedMessages }: Props) {
   return (
     <div>
       {messages?.map((message) => (
-        <ListingRow
+        <MailboxItem
           key={message._id}
           id={message._id}
           threadId={message.threadId}
