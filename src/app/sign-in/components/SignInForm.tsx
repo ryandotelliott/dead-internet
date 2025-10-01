@@ -38,7 +38,7 @@ export default function SignInForm({ onToggle, toggleLabel }: Props) {
           if (error) {
             throw Error(error.message ?? "Failed to sign in");
           }
-          router.push("/");
+          router.replace("/");
         } catch (err: unknown) {
           setErrorMessage(
             err instanceof Error ? err.message : "Failed to sign in",

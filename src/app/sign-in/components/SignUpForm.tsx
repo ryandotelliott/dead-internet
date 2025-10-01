@@ -40,7 +40,7 @@ export default function SignUpForm({ onToggle, toggleLabel }: Props) {
           if (error) {
             throw Error(error.message ?? "Failed to sign up");
           }
-          router.push("/");
+          router.replace("/");
         } catch (err: unknown) {
           setErrorMessage(
             err instanceof Error ? err.message : "Failed to sign up",
