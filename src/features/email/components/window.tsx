@@ -1,7 +1,7 @@
 import React from "react";
 import Viewer from "@/features/email/components/viewer/viewer";
 import Composer from "@/features/email/components/composer";
-import Listing from "@/features/email/components/listing/listing";
+import Listing from "@/features/email/components/mailbox/mailbox";
 
 export default function EmailWindow() {
   return (
